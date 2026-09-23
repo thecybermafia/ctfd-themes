@@ -1,0 +1,125 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="jumbotron">
+    <div class="container">
+        <h1>World Map Territory Manager</h1>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="alert alert-info" role="alert">
+                <i class="fas fa-info-circle"></i>
+                Assign each challenge to an individual country on the World Map gameboard.
+                <strong>1 country = 1 challenge</strong>. If a challenge has a <code>country:XX</code> tag and no override below, it will use the tag automatically.
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th style="width: 80px;">ID</th>
+                            <th>Challenge Name</th>
+                            <th>Category</th>
+                            <th>Points</th>
+                            <th style="width: 300px;">Assigned Country</th>
+                            <th style="width: 120px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for chal in challenges %}
+                        <tr id="chal-row-{{ chal.id }}">
+                            <td>{{ chal.id }}</td>
+                            <td>
+                                <a href="{{ url_for('admin.challenges_detail', challenge_id=chal.id) }}">
+                                    <strong>{{ chal.name }}</strong>
+                                </a>
+                            </td>
+                            <td><span class="badge badge-secondary">{{ chal.category }}</span></td>
+                            <td>{{ chal.value }}</td>
+                            <td>
+                                <select class="form-control country-select" data-chal-id="{{ chal.id }}" id="select-{{ chal.id }}">
+                                    <option value="">-- No Country (Unassigned) --</option>
+                                    {% for country in countries %}
+                                    {% set assigned_info = (assigned_countries.get(country.iso) if (assigned_countries is defined and assigned_countries) else None) %}
+                                    <option value="{{ country.iso }}" 
+                                        {% if chal.assigned_country == country.iso %}selected{% endif %}
+                                        {% if assigned_info and assigned_info.id != chal.id %}disabled style="color: #6c757d;"{% endif %}
+                                    >
+                                        {{ country.name }} ({{ country.iso }})
+                                        {% if assigned_info and assigned_info.id != chal.id %}
+                                            — [Assigned: {{ assigned_info.name }}]
+                                        {% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-primary save-btn" data-chal-id="{{ chal.id }}">
+                                    <i class="fas fa-save"></i> Save
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll(".save-btn").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+            var chalId = this.getAttribute("data-chal-id");
+            var select = document.getElementById("select-" + chalId);
+            var iso = select.value;
+            var originalText = btn.innerHTML;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            var method = iso ? "POST" : "DELETE";
+            var url = "/api/v1/world/challenges/" + chalId + "/country";
+            var options = {
+                method: method,
+                headers: {
+                    "Content-Type": "application/json",
+                    "CSRF-Token": init.csrfNonce
+                }
+            };
+            if (iso) {
+                options.body = JSON.stringify({ country_iso: iso });
+            }
+
+            fetch(url, options)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    btn.disabled = false;
+                    if (data.success) {
+                        btn.className = "btn btn-sm btn-success";
+                        btn.innerHTML = '<i class="fas fa-check"></i> Saved';
+                        setTimeout(function() {
+                            btn.className = "btn btn-sm btn-primary";
+                            btn.innerHTML = originalText;
+                        }, 2000);
+                    } else {
+                        alert(data.message || "Failed to update country assignment");
+                        btn.innerHTML = originalText;
+                    }
+                })
+                .catch(function(err) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    alert("Error saving country assignment: " + err);
+                });
+        });
+    });
+});
+</script>
+{% endblock %}

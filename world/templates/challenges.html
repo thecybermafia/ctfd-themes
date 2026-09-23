@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div 
+  x-data="ChallengeBoard" 
+  @load-challenges.window="loadChallenges()" 
+  @load-challenge.window="loadChallenge($event.detail)"
+>
+  <div x-data="WorldGameboard()" x-init="init()" class="fb-gameboard-wrapper" :class="{ 'list-view-active': listView }">
+    
+    <!-- Tactical HUD Command Bar (Full width, sleek 3-cluster flex layout, zero collision) -->
+    <div class="gameboard-hud-header">
+      <!-- Left Cluster: Title & Sector Filter -->
+      <div class="hud-left-cluster d-flex align-items-center gap-3">
+        <h4 class="hud-title mb-0">
+          <span class="pulse-dot me-2"></span>
+          <span x-text="gridTitle || 'MATRIX COMMAND GRID'"></span>
+        </h4>
+        <div class="hud-sector-select-wrapper" x-show="sectorFilterEnabled">
+          <select class="form-select form-select-sm hud-sector-select" x-model="selectedCategory" @change="applyFilters()">
+            <option value="">ALL SECTORS</option>
+            <template x-for="cat in categories" :key="cat">
+              <option :value="cat" x-text="cat"></option>
+            </template>
+          </select>
+        </div>
+      </div>
+
+      <!-- Center Cluster: Telemetry Filter Capsule -->
+      <div class="hud-center-cluster">
+        <div class="hud-filter-group">
+          <button 
+            type="button" 
+            class="hud-filter-btn" 
+            x-show="filterAllNodesEnabled"
+            :class="{ 'active': currentFilter === 'all' }" 
+            @click="setFilter('all')"
+          >
+            ALL NODES
+          </button>
+          <button 
+            type="button" 
+            class="hud-filter-btn" 
+            x-show="filterBreachedEnabled"
+            :class="{ 'active': currentFilter === 'mine' }" 
+            @click="setFilter('mine')"
+          >
+            BREACHED (YOU)
+          </button>
+          <button 
+            type="button" 
+            class="hud-filter-btn" 
+            x-show="filterHostileEnabled"
+            :class="{ 'active': currentFilter === 'others' }" 
+            @click="setFilter('others')"
+          >
+            HOSTILE
+          </button>
+        </div>
+      </div>
+
+      <!-- Right Cluster: Actions (Live Feed, Intel Tour, View Toggle) -->
+      <div class="hud-right-cluster d-flex align-items-center gap-2">
+        <button 
+          type="button" 
+          id="hud-feed-btn"
+          class="btn btn-sm hud-action-btn"
+          x-show="liveFeedEnabled"
+          :class="liveFeedOpen ? 'btn-success' : 'btn-outline-success'"
+          @click="toggleLiveFeed()"
+          title="Live Capture Telemetry Stream"
+        >
+          <i class="fas fa-satellite-dish me-1"></i>
+          <span x-text="liveFeedBtnLabel || 'LIVE FEED'"></span>
+        </button>
+
+        <button 
+          type="button" 
+          id="hud-guide-btn"
+          class="btn btn-sm btn-outline-secondary hud-action-btn" 
+          x-show="guideEnabled"
+          @click="startTutorial()"
+          title="Interactive Platform Guide & Walkthrough"
+        >
+          <i class="fas fa-compass me-1"></i>
+          <span>GUIDE</span>
+        </button>
+
+        <button 
+          type="button" 
+          class="btn btn-sm btn-outline-success hud-action-btn" 
+          x-show="viewToggleEnabled"
+          @click="toggleListView()"
+        >
+          <i :class="listView ? 'fas fa-globe me-1' : 'fas fa-th me-1'"></i>
+          <span x-text="listView ? 'MAP VIEW' : 'GRID VIEW'"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Live Feed Slide-out Drawer (Tactical Cyber HUD Stream) -->
+    <div class="cyber-livefeed-drawer" :class="{ 'open': liveFeedOpen, 'minimized': liveFeedMinimized }" x-show="liveFeedEnabled && liveFeedOpen" x-transition>
+      <div class="livefeed-header d-flex justify-content-between align-items-center px-3 py-2">
+        <div class="d-flex align-items-center gap-2">
+          <span class="status-pulse-dot"></span>
+          <div>
+            <div class="font-display fw-bold text-success hud-stream-title" x-text="liveFeedTitle || '[ LIVE FEED ]'"></div>
+            <div class="hud-stream-subtitle font-monospace text-muted" x-show="!liveFeedMinimized" x-text="liveFeedSubtitle || 'ORBITAL UPLINK ACTIVE • 20s CYCLE'"></div>
+          </div>
+        </div>
+        <div class="d-flex align-items-center gap-1">
+          <button type="button" class="btn btn-sm btn-link text-muted p-0 me-2" @click="toggleMinimizeLiveFeed()" title="Toggle Minimize">
+            <i class="fas" :class="liveFeedMinimized ? 'fa-window-maximize' : 'fa-minus'"></i>
+          </button>
+          <button type="button" class="btn-close btn-close-white btn-sm" @click="closeLiveFeed()" aria-label="Close"></button>
+        </div>
+      </div>
+
+      <div class="livefeed-body p-3" x-show="!liveFeedMinimized">
+        <template x-if="liveFeedEvents.length === 0">
+          <div class="text-center py-5 text-muted font-monospace">
+            <i class="fas fa-satellite fa-2x mb-3 text-success opacity-50"></i>
+            <div class="small fw-bold">NO CAPTURES DETECTED YET</div>
+            <div class="smaller opacity-75 mt-1">Awaiting initial node compromise strikes...</div>
+          </div>
+        </template>
+        <div class="livefeed-list">
+          <template x-for="(event, idx) in liveFeedEvents" :key="idx">
+            <div class="cyber-feed-card p-2 mb-2" :class="{'feed-first-blood': event.first_blood || event.is_first_blood}">
+              <!-- Top Row: Country / Target & Points -->
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <div 
+                  class="d-flex align-items-center gap-1 font-display small text-light feed-country-badge"
+                  :style="event.challenge_id ? 'cursor: pointer;' : ''"
+                  @click="engageFromFeed(event)"
+                  :title="event.challenge_id ? ('Engage ' + (event.country_name || 'Node')) : ''"
+                >
+                  <i class="fas fa-crosshairs text-success me-1" style="font-size: 0.75rem;"></i>
+                  <span class="fw-bold" x-text="event.country_name ? (event.country_name + ' [' + event.country_iso + ']') : 'SECTOR'"></span>
+                </div>
+                <span class="cyber-feed-pts font-monospace fw-bold" x-text="'+' + event.points + ' PTS'"></span>
+              </div>
+
+              <!-- Middle Row: Badges & Challenge -->
+              <div class="d-flex align-items-center gap-2 my-1">
+                <template x-if="event.type === 'activation'">
+                  <span class="badge cyber-badge-activation"><i class="fas fa-satellite me-1"></i>NODE ONLINE</span>
+                </template>
+                <template x-if="event.type !== 'activation' && (event.first_blood || event.is_first_blood)">
+                  <span class="badge cyber-badge-firstblood"><i class="fas fa-bolt me-1"></i>FIRST BLOOD</span>
+                </template>
+                <template x-if="event.type !== 'activation' && !event.first_blood && !event.is_first_blood">
+                  <span class="badge cyber-badge-breach"><i class="fas fa-shield-alt me-1"></i>BREACH</span>
+                </template>
+                <span 
+                  class="cyber-chal-tag font-monospace text-truncate feed-challenge-link" 
+                  :title="'Engage target: ' + event.challenge_name"
+                  @click.stop="engageFromFeed(event)"
+                  x-text="event.challenge_name"
+                ></span>
+              </div>
+
+              <!-- Bottom Row: Operative & Timestamp -->
+              <div class="d-flex justify-content-between align-items-center mt-2 pt-1 cyber-feed-footer font-monospace">
+                <span class="text-success">
+                  <i class="fas fa-user-secret me-1"></i>
+                  <template x-if="event.account_url">
+                    <a 
+                      :href="event.account_url" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      class="text-light text-decoration-none feed-team-link"
+                      :title="'View operative profile in new tab'"
+                      x-text="event.user_name || event.solver_name"
+                    ></a>
+                  </template>
+                  <template x-if="!event.account_url">
+                    <span class="text-light" x-text="event.user_name || event.solver_name"></span>
+                  </template>
+                </span>
+                <span class="text-muted small" x-text="formatFeedTime(event.date)"></span>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- Zoom Controls (Fixed at bottom right) -->
+    <div class="gameboard-zoom-controls" x-show="!listView">
+      <button type="button" class="hud-zoom-btn" @click="zoomIn()" title="Zoom In">
+        <i class="fas fa-plus"></i>
+      </button>
+      <button type="button" class="hud-zoom-btn" @click="zoomOut()" title="Zoom Out">
+        <i class="fas fa-minus"></i>
+      </button>
+      <button type="button" class="hud-zoom-btn" @click="resetZoom()" title="Reset Grid View">
+        <i class="fas fa-crosshairs"></i>
+      </button>
+    </div>
+
+    <!-- Tooltip on hover -->
+    <div id="country-tooltip" class="country-hover-tooltip">
+      <div class="c-name" id="tt-country-name">COUNTRY</div>
+      <div class="c-chal" id="tt-chal-name">TARGET SYSTEM</div>
+      <div class="d-flex justify-content-between align-items-center mt-1">
+        <span class="badge bg-secondary" id="tt-chal-cat">EXPLOIT</span>
+        <span class="c-pts" id="tt-chal-pts">500 PTS</span>
+      </div>
+      <div class="mt-1" id="tt-chal-status">[READY - CLICK TO ENGAGE]</div>
+    </div>
+
+    <!-- Map Gameboard View -->
+    <div class="fb-gameboard" x-show="!listView" style="position: relative;">
+      
+      <!-- Matrix Telemetry Loading Overlay (Clean terminal loader, no emojis) -->
+      <template x-if="!loaded">
+        <div class="d-flex justify-content-center align-items-center h-100 w-100" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--matrix-bg-card);">
+          <div class="text-center p-4" style="background: var(--matrix-bg-card); border: 1px solid var(--matrix-border-bright); border-radius: 4px;">
+            <template x-if="!error">
+              <div>
+                <div class="font-monospace mb-2 fw-bold" style="color: var(--matrix-green); font-size: 1rem; letter-spacing: 2px;">
+                  [ INITIALIZING MATRIX TELEMETRY ]
+                </div>
+                <div class="progress mx-auto" style="width: 260px; height: 6px;">
+                  <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%;"></div>
+                </div>
+                <small class="text-muted font-monospace d-block mt-2">Synchronizing orbital threat feed...</small>
+              </div>
+            </template>
+            <template x-if="error">
+              <div>
+                <p class="font-display text-danger mb-2" x-text="error"></p>
+                <button type="button" class="btn btn-sm btn-primary" @click="loadMapData()">
+                  RETRY TELEMETRY LINK
+                </button>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+
+      <svg 
+        id="fb-gameboard-map" 
+        viewBox="0 0 1008 651" 
+        preserveAspectRatio="xMidYMid meet"
+      >
+        <defs>
+          <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+          <filter id="glow-green-bright" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="4" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+          <filter id="glow-red" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="4" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+        </defs>
+        <g id="map-view-controller" class="view-controller">
+          <g class="countries" id="svg-countries-container">
+            <!-- Dynamically populated country geometries -->
+          </g>
+          <!-- SVG Tactical Precision Sniper-Eye Reticle -->
+          <g id="svg-sniper-reticle" class="svg-sniper-reticle" style="display: none; pointer-events: none;">
+            <g class="sniper-reticle-anim">
+              <circle cx="0" cy="0" r="30" class="reticle-ring-outer" fill="none" stroke="var(--matrix-green-bright)" stroke-width="1.3" stroke-dasharray="6 3"/>
+              <circle cx="0" cy="0" r="16" class="reticle-ring-inner" fill="none" stroke="var(--matrix-green-bright)" stroke-width="1" opacity="0.85"/>
+              <circle cx="0" cy="0" r="2.5" fill="var(--matrix-green-bright)"/>
+              <line x1="-38" y1="0" x2="-20" y2="0" stroke="var(--matrix-green-bright)" stroke-width="1.4"/>
+              <line x1="20" y1="0" x2="38" y2="0" stroke="var(--matrix-green-bright)" stroke-width="1.4"/>
+              <line x1="0" y1="-38" x2="0" y2="-20" stroke="var(--matrix-green-bright)" stroke-width="1.4"/>
+              <line x1="0" y1="20" x2="0" y2="38" stroke="var(--matrix-green-bright)" stroke-width="1.4"/>
+              <path d="M-22,-14 L-22,-22 L-14,-22" fill="none" stroke="var(--matrix-green-bright)" stroke-width="1.5"/>
+              <path d="M14,-22 L22,-22 L22,-14" fill="none" stroke="var(--matrix-green-bright)" stroke-width="1.5"/>
+              <path d="M22,14 L22,22 L14,22" fill="none" stroke="var(--matrix-green-bright)" stroke-width="1.5"/>
+              <path d="M-14,22 L-22,22 L-22,14" fill="none" stroke="var(--matrix-green-bright)" stroke-width="1.5"/>
+            </g>
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <!-- Tabular List View (Offset to guarantee NO collision with fixed HUD header or live feed) -->
+    <div class="container py-4 challenges-list-container" :class="{ 'with-livefeed': liveFeedEnabled && liveFeedOpen && !liveFeedMinimized }" x-show="listView">
+      <div class="row">
+        <template x-for="c in filteredListChallenges()" :key="c.id">
+          <div class="col-sm-6 col-md-4 col-lg-3 my-3">
+            <div 
+              class="card h-100" 
+              style="cursor: pointer; transition: all 0.2s ease;" 
+              :style="c.solved_by_me ? 'border-color: var(--matrix-green-bright) !important;' : ''"
+              @click="loadChallenge(c.id)"
+            >
+              <div class="card-body text-center d-flex flex-column justify-content-between">
+                <div>
+                  <span class="badge mb-2" :class="c.solved_by_me ? 'bg-success text-dark' : 'bg-secondary text-light'">
+                    <i class="fas fa-check-circle me-1" x-show="c.solved_by_me"></i>
+                    <span x-text="c.country_name || 'NODE'"></span>
+                  </span>
+                  <h5 class="card-title text-main" x-text="c.name"></h5>
+                  <p class="text-muted small mb-2 font-monospace" x-text="c.category"></p>
+                </div>
+                <div class="mt-2">
+                  <span class="h4 text-success" x-text="c.value + ' PTS'"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- Standard CTFd Modal Container (Rendered by ChallengeBoard) -->
+    <div
+      x-ref="challengeWindow" 
+      id="challenge-window" 
+      class="modal fade" 
+      tabindex="-1" 
+      role="dialog" 
+      x-data=""
+      x-html="$store.challenge.data.view"
+    ></div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('views.themes_beta', theme='world', path='js/world-tutorial.js') }}?v={{ Configs.ctf_version or '2.3' }}"></script>
+  <script src="{{ url_for('views.themes_beta', theme='world', path='js/world-gameboard.js') }}?v={{ Configs.ctf_version or '2.3' }}"></script>
+  {{ Assets.js("assets/js/challenges.js") }}
+{% endblock %}

@@ -1,0 +1,705 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<style>
+.badge.bg-secondary, .badge.text-bg-secondary, .badge-secondary {
+  background-color: #4b5563 !important;
+  color: #ffffff !important;
+  border: 1px solid #6b7280 !important;
+}
+</style>
+<div class="jumbotron">
+  <div class="container">
+    <h1>Theme Settings</h1>
+  </div>
+</div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12">
+
+      <!-- Navigation Tabs -->
+      <ul class="nav nav-tabs mb-4" id="themeSettingsTabs" role="tablist">
+        <li class="nav-item">
+          <a class="nav-link active" id="display-tab" data-bs-toggle="tab" data-toggle="tab" href="#display" role="tab">
+            <i class="fas fa-desktop me-1"></i> Display &amp; Visuals
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" id="modules-tab" data-bs-toggle="tab" data-toggle="tab" href="#modules" role="tab">
+            <i class="fas fa-satellite-dish me-1"></i> Interactive Modules
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" id="homepage-tab" data-bs-toggle="tab" data-toggle="tab" href="#homepage" role="tab">
+            <i class="fas fa-terminal me-1"></i> Homepage Matrix
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" id="countdown-tab" data-bs-toggle="tab" data-toggle="tab" href="#countdown" role="tab">
+            <i class="fas fa-stopwatch me-1"></i> Countdown Page
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" id="territories-tab" data-bs-toggle="tab" data-toggle="tab" href="#territories" role="tab">
+            <i class="fas fa-globe me-1"></i> Country Assignments
+          </a>
+        </li>
+      </ul>
+
+      <div class="tab-content" id="themeSettingsTabContent">
+        
+        <!-- Tab 1: Display & Visuals -->
+        <div class="tab-pane fade show active" id="display" role="tabpanel">
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5 class="mb-0">Matrix Visual &amp; Interface Configuration</h5>
+            </div>
+            <div class="card-body">
+              <form id="display-form">
+                <div class="mb-3">
+                  <label class="form-label fw-bold" for="grid-title-input">Command Grid Header Title</label>
+                  <input type="text" class="form-control" id="grid-title-input" value="{{ theme_configs.grid_title }}" style="max-width: 450px;">
+                  <div class="form-text text-muted">Title displayed on the Command Grid HUD toolbar (default: <code>MATRIX COMMAND GRID</code>).</div>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label fw-bold" for="default-view-select">Default Gameboard View Mode</label>
+                  <select class="form-select" id="default-view-select" style="max-width: 320px;">
+                    <option value="map" {% if theme_configs.default_view == 'map' %}selected{% endif %}>World Map View (Default)</option>
+                    <option value="grid" {% if theme_configs.default_view == 'grid' %}selected{% endif %}>Grid / List View</option>
+                  </select>
+                  <div class="form-text text-muted">The initial view mode presented to players when navigating to <code>/challenges</code>.</div>
+                </div>
+
+                <hr>
+
+                <div class="form-check form-switch mb-3">
+                  <input class="form-check-input" type="checkbox" id="scanlines-toggle" {% if theme_configs.scanlines_enabled %}checked{% endif %}>
+                  <label class="form-check-label fw-bold" for="scanlines-toggle">
+                    CRT Terminal Scanlines Effect
+                  </label>
+                  <div class="form-text text-muted">Renders a subtle retro CRT horizontal scanline texture overlay.</div>
+                </div>
+
+                <div class="form-check form-switch mb-3">
+                  <input class="form-check-input" type="checkbox" id="crt-glow-toggle" {% if theme_configs.crt_glow_enabled %}checked{% endif %}>
+                  <label class="form-check-label fw-bold" for="crt-glow-toggle">
+                    Phosphor Terminal Glow
+                  </label>
+                  <div class="form-text text-muted">Enables glowing emerald shadow vectors on active map nodes and titles.</div>
+                </div>
+
+                <div class="form-check form-switch mb-4">
+                  <input class="form-check-input" type="checkbox" id="zoom-animation-toggle" {% if theme_configs.zoom_animation_enabled %}checked{% endif %}>
+                  <label class="form-check-label fw-bold" for="zoom-animation-toggle">
+                    Tactical Camera Zoom Animation
+                  </label>
+                  <div class="form-text text-muted">When enabled, selecting a country smoothly pans and zooms the camera onto the target node. When disabled, the camera stays in place and displays the sniper-eye lock animation directly on the target.</div>
+                </div>
+
+                <hr>
+                <h5 class="mb-3"><i class="fas fa-sliders-h me-1 text-primary"></i> Tactical HUD Command Bar Buttons</h5>
+                <div class="row g-3 mb-4">
+                  <div class="col-md-6">
+                    <div class="form-check form-switch mb-2">
+                      <input class="form-check-input" type="checkbox" id="filter-all-nodes-toggle" {% if theme_configs.filter_all_nodes_enabled %}checked{% endif %}>
+                      <label class="form-check-label fw-bold" for="filter-all-nodes-toggle">Show "ALL NODES" Button</label>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                      <input class="form-check-input" type="checkbox" id="filter-breached-toggle" {% if theme_configs.filter_breached_enabled %}checked{% endif %}>
+                      <label class="form-check-label fw-bold" for="filter-breached-toggle">Show "BREACHED (YOU)" Button</label>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                      <input class="form-check-input" type="checkbox" id="filter-hostile-toggle" {% if theme_configs.filter_hostile_enabled %}checked{% endif %}>
+                      <label class="form-check-label fw-bold" for="filter-hostile-toggle">Show "HOSTILE" Button</label>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-check form-switch mb-2">
+                      <input class="form-check-input" type="checkbox" id="sector-filter-toggle" {% if theme_configs.sector_filter_enabled %}checked{% endif %}>
+                      <label class="form-check-label fw-bold" for="sector-filter-toggle">Show "Filter Sectors" Dropdown</label>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                      <input class="form-check-input" type="checkbox" id="guide-btn-toggle" {% if theme_configs.guide_enabled %}checked{% endif %}>
+                      <label class="form-check-label fw-bold" for="guide-btn-toggle">Show "GUIDE" Button</label>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                      <input class="form-check-input" type="checkbox" id="view-toggle-btn-toggle" {% if theme_configs.view_toggle_enabled %}checked{% endif %}>
+                      <label class="form-check-label fw-bold" for="view-toggle-btn-toggle">Show "MAP / GRID VIEW" Button</label>
+                    </div>
+                  </div>
+                </div>
+
+                <button type="button" class="btn btn-success" id="save-display-btn">
+                  <i class="fas fa-save me-1"></i> Save Display Settings
+                </button>
+                <span id="display-status" class="ms-2 fw-bold"></span>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Interactive Modules (Live Feed & Tutorial) -->
+        <div class="tab-pane fade" id="modules" role="tabpanel">
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5 class="mb-0">Live Feed &amp; Onboarding Tutorial</h5>
+            </div>
+            <div class="card-body">
+              <form id="modules-form">
+                <!-- Live Capture Feed -->
+                <div class="form-check form-switch mb-3">
+                  <input class="form-check-input" type="checkbox" id="live-feed-toggle" {% if theme_configs.live_feed_enabled %}checked{% endif %}>
+                  <label class="form-check-label fw-bold" for="live-feed-toggle">
+                    Enable Real-Time Capture Stream (Live Feed)
+                  </label>
+                  <div class="form-text text-muted">
+                    Provides an animated slide-out cyber drawer on <code>/challenges</code> showing live captures and First Blood badges.
+                  </div>
+                </div>
+
+                <div class="row g-3 mb-3 ps-4">
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold" for="live-feed-title-input">Live Feed Header Name / Title</label>
+                    <input type="text" class="form-control" id="live-feed-title-input" value="{{ theme_configs.live_feed_title }}">
+                    <div class="form-text text-muted">Title displayed on the live feed drawer header (default: <code>[ LIVE FEED ]</code>).</div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold" for="live-feed-subtitle-input">Live Feed Subtitle / Tagline</label>
+                    <input type="text" class="form-control" id="live-feed-subtitle-input" value="{{ theme_configs.live_feed_subtitle }}">
+                    <div class="form-text text-muted">Subtitle displayed below the title (default: <code>ORBITAL UPLINK ACTIVE • 20s CYCLE</code>).</div>
+                  </div>
+                </div>
+
+                <div class="row g-3 mb-4 ps-4">
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold" for="live-feed-interval">Polling Interval (Seconds)</label>
+                    <input type="number" min="5" max="120" class="form-control" id="live-feed-interval" value="{{ theme_configs.live_feed_interval }}">
+                    <div class="form-text text-muted">How frequently the client checks for new solves (minimum 5s, default 20s).</div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold" for="live-feed-limit">History Depth (Events)</label>
+                    <input type="number" min="5" max="100" class="form-control" id="live-feed-limit" value="{{ theme_configs.live_feed_limit }}">
+                    <div class="form-text text-muted">Maximum number of recent solves returned in the feed (default 30).</div>
+                  </div>
+                </div>
+
+                <hr>
+
+                <!-- Onboarding Tutorial -->
+                <div class="form-check form-switch mb-3">
+                  <input class="form-check-input" type="checkbox" id="tutorial-toggle" {% if theme_configs.tutorial_enabled %}checked{% endif %}>
+                  <label class="form-check-label fw-bold" for="tutorial-toggle">
+                    Enable Interactive Onboarding Tour (Intel Briefing)
+                  </label>
+                  <div class="form-text text-muted">
+                    Enables the interactive field guide explaining radar nodes, orbital controls, and telemetry filters.
+                  </div>
+                </div>
+
+                <div class="mb-4 ps-4">
+                  <button type="button" class="btn btn-outline-secondary btn-sm" id="reset-tutorial-btn">
+                    <i class="fas fa-redo me-1"></i> Reset Tour for All Players (Force Retake)
+                  </button>
+                  <div class="form-text text-muted">Clears the client tour completion flag so all operatives receive the briefing again.</div>
+                </div>
+
+                <hr>
+
+                <button type="button" class="btn btn-success" id="save-modules-btn">
+                  <i class="fas fa-save me-1"></i> Save Module Settings
+                </button>
+                <span id="modules-status" class="ms-2 fw-bold"></span>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Homepage Matrix Terminal -->
+        <div class="tab-pane fade" id="homepage" role="tabpanel">
+          <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">Homepage Matrix Terminal Configuration (/)</h5>
+              <a href="/" target="_blank" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-external-link-alt me-1"></i> View Homepage &rarr;
+              </a>
+            </div>
+            <div class="card-body">
+              <form id="homepage-form">
+                <div class="form-check form-switch mb-3">
+                  <input class="form-check-input" type="checkbox" id="matrix-home-toggle" {% if theme_configs.matrix_home_enabled %}checked{% endif %}>
+                  <label class="form-check-label fw-bold" for="matrix-home-toggle">
+                    Enable Homepage Matrix Terminal
+                  </label>
+                  <div class="form-text text-muted">
+                    When enabled, the homepage (<code>/</code>) renders the full-screen cyberpunk Matrix terminal experience. When disabled, the standard CTFd homepage content is displayed.
+                  </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                  <div class="col-md-6" style="max-width: 250px;">
+                    <label class="form-label fw-bold" for="matrix-home-format">Format</label>
+                    <select class="form-select" id="matrix-home-format">
+                      <option value="html" {% if theme_configs.matrix_home_format != 'markdown' %}selected{% endif %}>HTML</option>
+                      <option value="markdown" {% if theme_configs.matrix_home_format == 'markdown' %}selected{% endif %}>Markdown</option>
+                    </select>
+                    <div class="form-text text-muted">Content markup language.</div>
+                  </div>
+                </div>
+
+                <hr>
+
+                <div class="mb-4">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                      <h4 class="mb-0">Content</h4>
+                      <small class="text-muted">This is the HTML or Markdown content of your homepage terminal card</small>
+                    </div>
+                  </div>
+
+                  <textarea class="form-control font-monospace" id="matrix-home-content-input" rows="20" style="resize: vertical; font-size: 0.88rem; line-height: 1.5;">{% if theme_configs.matrix_home_content %}{{ theme_configs.matrix_home_content }}{% else %}<div class="matrix-terminal-card">
+  <div class="matrix-terminal-header">
+    <div>
+      <i class="fas fa-terminal me-2"></i>
+      <span>TERMINAL // CTF-NET HOST CONNECTION [ACTIVE]</span>
+    </div>
+  </div>
+
+  <div class="matrix-terminal-body">
+    <div class="matrix-typewriter-container" data-phrases="Wake up, Operative...&#10;The Matrix has you...&#10;Follow the white rabbit.&#10;Knock, knock, Hacker.">
+      <span id="matrix-typewriter-text"></span>
+      <span class="matrix-cursor" id="matrix-cursor"></span>
+    </div>
+
+    <div class="matrix-terminal-telemetry" id="matrix-telemetry" style="display: none;">
+      <div><span class="text-success">&gt;</span> STATUS: OPERATIONAL // 0-DAY MATRIX ACTIVE</div>
+      <div><span class="text-success">&gt;</span> PROTOCOL: GEOPOLITICAL CYBER WARFARE</div>
+      <div><span class="text-success">&gt;</span> NODES: REAL-TIME GLOBAL TARGETS LOADED</div>
+    </div>
+
+    <div class="matrix-hero-actions" id="matrix-actions" style="display: none;">
+      <a href="/challenges" class="matrix-btn-enter">
+        <i class="fas fa-crosshairs"></i> ENTER THE GRID
+      </a>
+      <a href="/scoreboard" class="matrix-btn-secondary">
+        <i class="fas fa-chart-line"></i> SCOREBOARD
+      </a>
+      <a href="/login" class="matrix-btn-secondary matrix-auth-login">
+        <i class="fas fa-sign-in-alt"></i> LOGIN
+      </a>
+      <a href="/register" class="matrix-btn-secondary matrix-auth-register">
+        <i class="fas fa-user-plus"></i> REGISTER
+      </a>
+    </div>
+
+    <div class="matrix-skip-hint" id="matrix-skip-hint">
+      [Click anywhere or press any key to skip sequence]
+    </div>
+  </div>
+</div>{% endif %}</textarea>
+                  <div class="form-text text-muted mt-2">
+                    Operatives will see this custom terminal layout on <code>/</code>. Use <code>data-phrases="..."</code> (separated by newlines) on <code>.matrix-typewriter-container</code> to configure the typewriter phrases.
+                  </div>
+                </div>
+
+                <button type="button" class="btn btn-success" id="save-homepage-btn">
+                  <i class="fas fa-save me-1"></i> Save Homepage Settings
+                </button>
+                <span id="homepage-status" class="ms-2 fw-bold"></span>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Countdown Page -->
+        <div class="tab-pane fade" id="countdown" role="tabpanel">
+          <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">Countdown Clock (/countdown)</h5>
+              <a href="/countdown" target="_blank" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-external-link-alt me-1"></i> View Countdown Page &rarr;
+              </a>
+            </div>
+            <div class="card-body">
+              <form id="countdown-form">
+                <div class="form-check form-switch mb-3">
+                  <input class="form-check-input" type="checkbox" id="countdown-toggle" {% if theme_configs.countdown_enabled %}checked{% endif %}>
+                  <label class="form-check-label fw-bold" for="countdown-toggle">
+                    Enable Countdown Page
+                  </label>
+                  <div class="form-text text-muted">Activates the full-screen digital matrix countdown terminal at <code>/countdown</code>.</div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                  <div class="col-md-6" style="max-width: 340px;">
+                    <label class="form-label fw-bold" for="countdown-target">Target Launch Date &amp; Time (UTC / ISO)</label>
+                    <input type="datetime-local" class="form-control" id="countdown-target" value="{{ theme_configs.countdown_target }}">
+                    <div class="form-text text-muted">
+                      Countdown clock target. If left blank, automatically synchronizes with CTFd's global Start Time (<code>Configs.start</code>).
+                    </div>
+                  </div>
+                  <div class="col-md-6" style="max-width: 250px;">
+                    <label class="form-label fw-bold" for="countdown-format">Format</label>
+                    <select class="form-select" id="countdown-format">
+                      <option value="html" {% if theme_configs.countdown_format != 'markdown' %}selected{% endif %}>HTML</option>
+                      <option value="markdown" {% if theme_configs.countdown_format == 'markdown' %}selected{% endif %}>Markdown</option>
+                    </select>
+                    <div class="form-text text-muted">Content markup language.</div>
+                  </div>
+                </div>
+
+                <hr>
+
+                <div class="mb-4">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                      <h4 class="mb-0">Content</h4>
+                      <small class="text-muted">This is the HTML or Markdown content of your countdown page</small>
+                    </div>
+                  </div>
+
+                  <textarea class="form-control font-monospace" id="countdown-content-input" rows="20" style="resize: vertical; font-size: 0.88rem; line-height: 1.5;">{% if theme_configs.countdown_content %}{{ theme_configs.countdown_content }}{% else %}<div class="hud-status-badge mb-3 text-center">
+  <span class="pulse-dot"></span>
+  <span>MISSION TELEMETRY // SECURE COUNTDOWN</span>
+</div>
+
+<h1 class="countdown-title mb-2 text-center">OPERATION COMMENCES IN</h1>
+<p class="countdown-subtitle text-muted mb-4 font-monospace text-center">SYNCHRONIZING WITH CTF MASTER CLOCK</p>
+
+<div id="countdown-clock-placeholder"></div>
+
+<!-- Mission Briefing Card -->
+<div class="row justify-content-center mb-5">
+  <div class="col-md-10 col-lg-8">
+    <div class="cyber-countdown-briefing-card text-start p-4">
+      <div class="briefing-header d-flex align-items-center mb-3">
+        <i class="fas fa-terminal me-2 text-success"></i>
+        <span class="font-display fw-bold text-success" style="font-size: 0.85rem; letter-spacing: 1.5px;">[ MISSION BRIEFING // RESTRICTED ACCESS ]</span>
+      </div>
+      <div class="briefing-content font-monospace text-light" style="font-size: 0.9rem; line-height: 1.7;">
+        <p>Operatives, satellite telemetry feeds are currently synchronizing with the central orbital command grid. Stand by for target activation and global node breach authorization.</p>
+        <p class="mb-0 text-muted small">// ALL CONNECTIONS MONITORED • REPORT ANOMALIES TO COMMAND</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="d-flex justify-content-center gap-3">
+  <a href="/challenges" class="btn btn-outline-success font-monospace px-4 py-2">
+    <i class="fas fa-terminal me-2"></i> <span>CHALLENGE GRID</span>
+  </a>
+  <a href="/" class="btn btn-outline-secondary font-monospace px-4 py-2">
+    <i class="fas fa-home me-2"></i> <span>HEADQUARTERS</span>
+  </a>
+</div>{% endif %}</textarea>
+                  <div class="form-text text-muted mt-2">
+                    Operatives will see this custom layout on <code>/countdown</code>. Place <code>&lt;div id="countdown-clock-placeholder"&gt;&lt;/div&gt;</code> where the animated timer cards should appear.
+                  </div>
+                </div>
+
+                <div class="form-check form-switch mb-4">
+                  <input class="form-check-input" type="checkbox" id="countdown-redirect-toggle" {% if theme_configs.countdown_redirect %}checked{% endif %}>
+                  <label class="form-check-label fw-bold" for="countdown-redirect-toggle">
+                    Auto-Redirect to Challenges on Expiry
+                  </label>
+                  <div class="form-text text-muted">Automatically forwards operatives to <code>/challenges</code> once the countdown reaches zero.</div>
+                </div>
+
+                <button type="button" class="btn btn-success" id="save-countdown-btn">
+                  <i class="fas fa-save me-1"></i> Save Countdown Settings
+                </button>
+                <span id="countdown-status" class="ms-2 fw-bold"></span>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 4: Country Assignments (NO BONUS COLUMNS) -->
+        <div class="tab-pane fade" id="territories" role="tabpanel">
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5 class="mb-0">World Map Country Assignments (1:1 Mapping)</h5>
+            </div>
+            <div class="card-body">
+              <div class="alert alert-info">
+                <i class="fas fa-info-circle me-1"></i>
+                <strong>Country Mapping</strong>: Assign each challenge to a nation on the World Map. Each country can only be mapped to one challenge.
+                <br>
+                <small class="text-muted">Note: Early-solver decaying bonus levels are configured <strong>per challenge</strong> on each challenge's detail page (<a href="{{ url_for('admin.challenges_listing') }}">Admin &rarr; Challenges</a> &rarr; Country &amp; Bonus tab).</small>
+              </div>
+
+              <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                  <thead class="table-dark">
+                    <tr>
+                      <th style="width: 70px;">ID</th>
+                      <th>Challenge Name</th>
+                      <th>Category</th>
+                      <th style="width: 100px;">Base Pts</th>
+                      <th style="width: 320px;">Assigned Country</th>
+                      <th style="width: 120px;">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for chal in challenges %}
+                    <tr id="row-{{ chal.id }}">
+                      <td class="font-monospace text-muted">#{{ chal.id }}</td>
+                      <td>
+                        <a href="{{ url_for('admin.challenges_detail', challenge_id=chal.id) }}" class="fw-bold text-decoration-none">
+                          {{ chal.name }}
+                        </a>
+                      </td>
+                      <td><span class="badge bg-secondary">{{ chal.category }}</span></td>
+                      <td class="fw-bold text-success font-monospace">{{ chal.value }}</td>
+                      <td>
+                        <select class="form-select form-select-sm" id="country-{{ chal.id }}">
+                          <option value="">-- No Country (Unassigned) --</option>
+                          {% for c in countries %}
+                          {% set assigned = assigned_countries.get(c.iso) %}
+                          <option value="{{ c.iso }}" 
+                            {% if chal.assigned_country == c.iso %}selected{% endif %}
+                            {% if assigned and assigned.id != chal.id %}disabled style="color: #999;"{% endif %}
+                          >
+                            {{ c.name }} ({{ c.iso }})
+                            {% if assigned and assigned.id != chal.id %} [Assigned: {{ assigned.name }}]{% endif %}
+                          </option>
+                          {% endfor %}
+                        </select>
+                      </td>
+                      <td>
+                        <button type="button" class="btn btn-sm btn-primary save-chal-btn" data-chal-id="{{ chal.id }}">
+                          <i class="fas fa-save me-1"></i> Save
+                        </button>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const csrfToken = (window.init && window.init.csrfNonce) || "";
+
+  // 1. Save Challenge Country Assignment (Per-row)
+  document.querySelectorAll(".save-chal-btn").forEach(btn => {
+    btn.addEventListener("click", function() {
+      const chalId = this.getAttribute("data-chal-id");
+      const iso = document.getElementById("country-" + chalId).value;
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+      fetch("/api/v1/world/challenges/" + chalId + "/country", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "CSRF-Token": csrfToken
+        },
+        body: JSON.stringify({
+          country_iso: iso || null
+        })
+      })
+      .then(r => r.json())
+      .then(res => {
+        btn.disabled = false;
+        if (res.success) {
+          btn.className = "btn btn-sm btn-success save-chal-btn";
+          btn.innerHTML = '<i class="fas fa-check me-1"></i> Saved';
+          setTimeout(() => {
+            btn.className = "btn btn-sm btn-primary save-chal-btn";
+            btn.innerHTML = '<i class="fas fa-save me-1"></i> Save';
+          }, 2000);
+        } else {
+          alert(res.message || "Error saving country");
+          btn.className = "btn btn-sm btn-danger save-chal-btn";
+          btn.innerHTML = '<i class="fas fa-times me-1"></i> Error';
+        }
+      })
+      .catch(err => {
+        btn.disabled = false;
+        btn.className = "btn btn-sm btn-danger save-chal-btn";
+        btn.innerHTML = '<i class="fas fa-times me-1"></i> Error';
+      });
+    });
+  });
+
+  // 2. Save Display & Visual Settings
+  document.getElementById("save-display-btn").addEventListener("click", function() {
+    const scanlines = document.getElementById("scanlines-toggle").checked;
+    const crtGlow = document.getElementById("crt-glow-toggle").checked;
+    const zoomAnim = document.getElementById("zoom-animation-toggle").checked;
+    const gridTitle = document.getElementById("grid-title-input").value;
+    const defaultView = document.getElementById("default-view-select").value;
+
+    const filterAll = document.getElementById("filter-all-nodes-toggle").checked;
+    const filterBreached = document.getElementById("filter-breached-toggle").checked;
+    const filterHostile = document.getElementById("filter-hostile-toggle").checked;
+    const sectorFilter = document.getElementById("sector-filter-toggle").checked;
+    const guideBtn = document.getElementById("guide-btn-toggle").checked;
+    const viewToggle = document.getElementById("view-toggle-btn-toggle").checked;
+
+    const status = document.getElementById("display-status");
+
+    status.className = "ms-2 text-muted";
+    status.textContent = "Saving...";
+
+    fetch("/api/v1/world/settings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "CSRF-Token": csrfToken
+      },
+      body: JSON.stringify({
+        scanlines_enabled: scanlines,
+        crt_glow_enabled: crtGlow,
+        zoom_animation_enabled: zoomAnim,
+        grid_title: gridTitle,
+        default_view: defaultView,
+        filter_all_nodes_enabled: filterAll,
+        filter_breached_enabled: filterBreached,
+        filter_hostile_enabled: filterHostile,
+        sector_filter_enabled: sectorFilter,
+        guide_enabled: guideBtn,
+        view_toggle_enabled: viewToggle
+      })
+    })
+    .then(r => r.json())
+    .then(res => {
+      status.className = "ms-2 text-success";
+      status.textContent = "Display settings saved!";
+      setTimeout(() => { status.textContent = ""; }, 3000);
+    });
+  });
+
+  // 3. Save Feature Modules
+  document.getElementById("save-modules-btn").addEventListener("click", function() {
+    const liveFeed = document.getElementById("live-feed-toggle").checked;
+    const feedTitle = document.getElementById("live-feed-title-input").value;
+    const feedSubtitle = document.getElementById("live-feed-subtitle-input").value;
+    const interval = parseInt(document.getElementById("live-feed-interval").value) || 20;
+    const limit = parseInt(document.getElementById("live-feed-limit").value) || 30;
+    const tutorial = document.getElementById("tutorial-toggle").checked;
+    const status = document.getElementById("modules-status");
+
+    status.className = "ms-2 text-muted";
+    status.textContent = "Saving...";
+
+    fetch("/api/v1/world/settings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "CSRF-Token": csrfToken
+      },
+      body: JSON.stringify({
+        live_feed_enabled: liveFeed,
+        live_feed_title: feedTitle,
+        live_feed_subtitle: feedSubtitle,
+        live_feed_interval: interval,
+        live_feed_limit: limit,
+        tutorial_enabled: tutorial
+      })
+    })
+    .then(r => r.json())
+    .then(res => {
+      status.className = "ms-2 text-success";
+      status.textContent = "Module settings saved!";
+      setTimeout(() => { status.textContent = ""; }, 3000);
+    });
+  });
+
+  // Save Homepage Matrix Settings
+  const saveHomeBtn = document.getElementById("save-homepage-btn");
+  if (saveHomeBtn) {
+    saveHomeBtn.addEventListener("click", function() {
+      const enabled = document.getElementById("matrix-home-toggle").checked;
+      const format = document.getElementById("matrix-home-format").value;
+      const content = document.getElementById("matrix-home-content-input").value;
+      const status = document.getElementById("homepage-status");
+
+      status.className = "ms-2 text-muted";
+      status.textContent = "Saving...";
+
+      fetch("/api/v1/world/settings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "CSRF-Token": csrfToken
+        },
+        body: JSON.stringify({
+          matrix_home_enabled: enabled,
+          matrix_home_format: format,
+          matrix_home_content: content
+        })
+      })
+      .then(r => r.json())
+      .then(res => {
+        status.className = "ms-2 text-success";
+        status.textContent = "Homepage settings saved!";
+        setTimeout(() => { status.textContent = ""; }, 3000);
+      })
+      .catch(err => {
+        status.className = "ms-2 text-danger";
+        status.textContent = "Failed to save homepage settings.";
+      });
+    });
+  }
+
+  // Reset Tutorial
+  document.getElementById("reset-tutorial-btn").addEventListener("click", function() {
+    try {
+      localStorage.removeItem("world_theme_tutorial_completed_v1");
+      alert("Tutorial completion flag reset! All players will receive the intel briefing again on /challenges.");
+    } catch(e) {}
+  });
+
+  // 4. Save Countdown Settings
+  document.getElementById("save-countdown-btn").addEventListener("click", function() {
+    const enabled = document.getElementById("countdown-toggle").checked;
+    const target = document.getElementById("countdown-target").value;
+    const format = document.getElementById("countdown-format").value;
+    const content = document.getElementById("countdown-content-input").value;
+    const redirect = document.getElementById("countdown-redirect-toggle").checked;
+    const status = document.getElementById("countdown-status");
+
+    status.className = "ms-2 text-muted";
+    status.textContent = "Saving...";
+
+    fetch("/api/v1/world/settings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "CSRF-Token": csrfToken
+      },
+      body: JSON.stringify({
+        countdown_enabled: enabled,
+        countdown_target: target,
+        countdown_format: format,
+        countdown_content: content,
+        countdown_redirect: redirect
+      })
+    })
+    .then(r => r.json())
+    .then(res => {
+      status.className = "ms-2 text-success";
+      status.textContent = "Countdown settings saved!";
+      setTimeout(() => { status.textContent = ""; }, 3000);
+    });
+  });
+
+});
+</script>
+{% endblock %}

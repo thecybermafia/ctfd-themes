@@ -1,0 +1,32 @@
+CTFd World Theme & Companion Plugin
+Copyright 2026 CyberMafia (https://github.com/thecybermafia)
+
+This product includes software developed by CyberMafia.
+
+===============================================================================
+MANDATORY ATTRIBUTION REQUIREMENT (Apache License 2.0, Section 4d)
+===============================================================================
+
+Under the terms of the Apache License Version 2.0, any individual, organization,
+or entity that uses, deploys, modifies, distributes, forks, or embeds this
+software (or any derivative work based upon it) MUST retain and display the
+following attribution notice prominently:
+
+1. SOURCE CODE & REPOSITORIES:
+   Retain this NOTICE file in its entirety in all copies, forks, and distributions.
+   Any modified file must carry a prominent notice stating that it has been
+   modified, including the date of modification and reference to the original author.
+
+2. RUNTIME & PUBLIC COMPETITION DEPLOYMENTS:
+   If this theme is deployed in a publicly or privately accessible CTF competition,
+   tournament, or educational portal, the theme credits and author attribution
+   must remain visible. Specifically:
+   - The theme attribution link in the website footer must be preserved:
+     "Theme: World by CyberMafia"
+   - In any external promotion, writeup, or competition documentation, attribution
+     to CyberMafia (https://github.com/thecybermafia/ctfd-world-theme) is mandatory.
+
+3. MODIFICATIONS:
+   All modifications, custom color palettes, and fork revisions must be clearly
+   marked as derivative works and may not remove or obscure the original
+   CyberMafia authorship and copyright notices.

@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="jumbotron">
+    <div class="container">
+      <h1>
+        {% trans %}Scoreboard{% endtrans %}
+      </h1>
+    </div>
+  </div>
+  <div class="container">
+    {% include "components/errors.html" %}
+
+    <div class="cyber-scoreboard-graph-card mb-4" x-data="ScoreboardDetail" @bracket-change.window="activeBracket=$event.detail; update();">
+      <div class="cyber-graph-card-header d-flex justify-content-between align-items-center">
+        <span class="cyber-card-tag"><i class="fas fa-satellite-dish me-2"></i>[ ORBITAL SCOREBOARD TELEMETRY // TOP CONTENDERS ]</span>
+        <span class="cyber-card-status"><span class="status-pulse-dot"></span> LIVE TELEMETRY</span>
+      </div>
+      <div class="cyber-graph-card-body position-relative">
+        <div id="score-graph" class="w-100" x-ref="scoregraph" style="min-height: 380px;" :class="{'d-block': show, 'd-none': !show}"></div>
+        <div class="col-md-12 text-center py-5" x-show="!show">
+          <h5 class="text-muted font-monospace"><i class="fas fa-satellite me-2"></i>NO TELEMETRY AVAILABLE // AWAITING SOLVES</h5>
+        </div>
+      </div>
+    </div>
+
+    <div id="scoreboard" class="row" x-data="ScoreboardList">
+      <template x-if="brackets.length && standings.length">
+        <div class="col-md-12 py-3">
+          <nav class="nav nav-pills nav-fill">
+            <button :class="{'nav-link': true, 'active': !activeBracket}" @click="activeBracket=null">{% trans %}All{% endtrans %}</button>
+            <template x-for="bracket in brackets">
+              <button :class="{'nav-link': true, 'active': activeBracket == bracket.id}" x-text="bracket.name" @click="activeBracket=bracket.id"></button>
+            </template>
+          </nav>
+        </div>
+      </template>
+
+      <div class="col-md-12" x-show="standings.length">
+        <table class="table table-striped align-middle scoreboard-table">
+          <thead>
+          <tr>
+            <th style="width: 10px">{% trans %}Place{% endtrans %}</th>
+            <th class="text-start ps-3">{{ get_mode_as_word(capitalize=True) }}</th>
+            <th>{% trans %}Score{% endtrans %}</th>
+          </tr>
+          </thead>
+
+          <tbody>
+            <template x-for="(standing, index) in standings.filter(i => activeBracket ? i.bracket_id==activeBracket : true)">
+              <tr>
+                <th scope="row" class="text-center" x-text="index + 1"></th>
+                <td class="text-start">
+                  <a :href="standing.account_url" x-text="standing.name"></a>
+                  <template x-if="standing.bracket_name">
+                    <span class="badge bg-secondary ms-2" x-text="standing.bracket_name"></span>
+                  </template>
+                </td>
+                <td x-text="standing.score"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="col-md-12" x-show="! standings.length">
+        <h3 class="text-center text-muted">{% trans %}Scoreboard is empty{% endtrans %}</h3>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    window.scoreboardChartOptions = {
+      backgroundColor: 'transparent',
+      textStyle: {
+        color: '#00e676',
+        fontFamily: "'Share Tech Mono', monospace"
+      },
+      title: {
+        textStyle: {
+          color: '#00e676',
+          fontFamily: "'Orbitron', sans-serif",
+          fontSize: 16,
+          fontWeight: 700
+        }
+      },
+      legend: {
+        textStyle: {
+          color: '#9e9e9e',
+          fontFamily: "'Share Tech Mono', monospace"
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(5, 13, 10, 0.95)',
+        borderColor: '#00e676',
+        borderWidth: 1,
+        textStyle: {
+          color: '#e0e0e0',
+          fontFamily: "'Share Tech Mono', monospace"
+        }
+      },
+      xAxis: [{
+        axisLine: { lineStyle: { color: 'rgba(0, 230, 118, 0.3)' } },
+        splitLine: { lineStyle: { color: 'rgba(0, 230, 118, 0.08)' } },
+        axisLabel: { color: '#9e9e9e', fontFamily: "'Share Tech Mono', monospace" }
+      }],
+      yAxis: [{
+        axisLine: { lineStyle: { color: 'rgba(0, 230, 118, 0.3)' } },
+        splitLine: { lineStyle: { color: 'rgba(0, 230, 118, 0.08)' } },
+        axisLabel: { color: '#9e9e9e', fontFamily: "'Share Tech Mono', monospace" }
+      }],
+      dataZoom: [{
+        borderColor: 'rgba(0, 230, 118, 0.3)',
+        fillerColor: 'rgba(0, 230, 118, 0.15)',
+        handleStyle: { color: '#00e676' },
+        textStyle: { color: '#9e9e9e', fontFamily: "'Share Tech Mono', monospace" }
+      }],
+      color: ['#00e676', '#00e5ff', '#ffeb3b', '#ff3d00', '#d500f9', '#76ff03', '#1de9b6', '#ff9100', '#00b0ff', '#f50057']
+    };
+  </script>
+  {{ Assets.js("assets/js/scoreboard.js") }}
+{% endblock %}

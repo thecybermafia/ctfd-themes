@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% if (request.path == '/' or request.path == '/index') and Configs.world_matrix_home_enabled is not false and Configs.world_matrix_home_enabled != 'false' %}
+    <style>main { margin-bottom: 0 !important; } footer.footer { display: none !important; }</style>
+    <div class="matrix-hero-section" id="matrix-hero-container">
+      <canvas id="matrix-rain-canvas" class="matrix-hero-canvas"></canvas>
+
+      {% if Configs.world_matrix_home_content %}
+        {% if Configs.world_matrix_home_format == 'markdown' %}
+          {{ Configs.world_matrix_home_content | markdown | safe }}
+        {% else %}
+          {{ Configs.world_matrix_home_content | safe }}
+        {% endif %}
+      {% else %}
+        <div class="matrix-terminal-card">
+          <div class="matrix-terminal-header">
+            <div>
+              <i class="fas fa-terminal me-2"></i>
+              <span>{{ Configs.world_matrix_terminal_header or 'TERMINAL // CTF-NET HOST CONNECTION [ACTIVE]' }}</span>
+            </div>
+          </div>
+
+          <div class="matrix-terminal-body">
+            <div class="matrix-typewriter-container" data-phrases="{{ Configs.world_matrix_typing_phrases or 'Wake up, Operative...&#10;The Matrix has you...&#10;Follow the white rabbit.&#10;Knock, knock, Hacker.' }}">
+              <span id="matrix-typewriter-text"></span>
+              <span class="matrix-cursor" id="matrix-cursor"></span>
+            </div>
+
+            <div class="matrix-terminal-telemetry" id="matrix-telemetry" style="display: none;">
+              <div><span class="text-success">&gt;</span> {{ Configs.world_matrix_status_text or 'STATUS: OPERATIONAL // 0-DAY MATRIX ACTIVE' }}</div>
+              <div><span class="text-success">&gt;</span> {{ Configs.world_matrix_protocol_text or 'PROTOCOL: GEOPOLITICAL CYBER WARFARE' }}</div>
+              <div><span class="text-success">&gt;</span> {{ Configs.world_matrix_nodes_text or 'NODES: REAL-TIME GLOBAL TARGETS LOADED' }}</div>
+            </div>
+
+            <div class="matrix-hero-actions" id="matrix-actions" style="display: none;">
+              <a href="{{ Configs.world_matrix_btn_primary_url or url_for('challenges.listing') }}" class="matrix-btn-enter">
+                <i class="fas fa-crosshairs"></i> {{ Configs.world_matrix_btn_primary_label or 'ENTER THE GRID' }}
+              </a>
+              <a href="{{ Configs.world_matrix_btn_secondary_url or url_for('scoreboard.listing') }}" class="matrix-btn-secondary">
+                <i class="fas fa-chart-line"></i> {{ Configs.world_matrix_btn_secondary_label or 'SCOREBOARD' }}
+              </a>
+              {% if not authed() %}
+                <a href="{{ url_for('auth.login') }}" class="matrix-btn-secondary matrix-auth-login">
+                  <i class="fas fa-sign-in-alt"></i> LOGIN
+                </a>
+                <a href="{{ url_for('auth.register') }}" class="matrix-btn-secondary matrix-auth-register">
+                  <i class="fas fa-user-plus"></i> REGISTER
+                </a>
+              {% endif %}
+            </div>
+
+            <div class="matrix-skip-hint" id="matrix-skip-hint">
+              [Click anywhere or press any key to skip sequence]
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    {% if authed() %}
+      <script>
+        document.addEventListener("DOMContentLoaded", function() {
+          document.querySelectorAll(".matrix-auth-login, .matrix-auth-register, a[href$='/login'], a[href$='/register']").forEach(function(el) {
+            if (el.closest('.matrix-hero-actions')) {
+              el.style.display = 'none';
+            }
+          });
+        });
+      </script>
+    {% endif %}
+  {% else %}
+    <div class="container">
+      {{ content | safe }}
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% block scripts %}
+  {{ Assets.js("assets/js/page.js") }}
+  {% if (request.path == '/' or request.path == '/index') and Configs.world_matrix_home_enabled is not false and Configs.world_matrix_home_enabled != 'false' %}
+  <script>
+  (function() {
+    // 1. Digital Matrix Code Rain Canvas
+    const canvas = document.getElementById("matrix-rain-canvas");
+    if (canvas) {
+      const ctx = canvas.getContext("2d");
+      let width, height, columns, drops;
+      const chars = "ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ0123456789ABCDEF01<>/{}=+*";
+      const fontSize = 16;
+
+      function resizeCanvas() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        columns = Math.floor(width / fontSize);
+        drops = [];
+        for (let i = 0; i < columns; i++) {
+          drops[i] = Math.floor(Math.random() * -height);
+        }
+      }
+
+      window.addEventListener("resize", resizeCanvas);
+      resizeCanvas();
+
+      function drawMatrix() {
+        ctx.fillStyle = "rgba(3, 8, 5, 0.08)";
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.font = fontSize + "px 'Courier New', monospace";
+
+        for (let i = 0; i < drops.length; i++) {
+          const text = chars.charAt(Math.floor(Math.random() * chars.length));
+          const x = i * fontSize;
+          const y = drops[i] * fontSize;
+
+          // Head of drop is bright white/emerald
+          ctx.fillStyle = "#e6fffa";
+          ctx.fillText(text, x, y);
+
+          // Body of drop is neon green
+          ctx.fillStyle = "#00e676";
+          ctx.fillText(text, x, y - fontSize);
+
+          if (y > height && Math.random() > 0.975) {
+            drops[i] = 0;
+          }
+          drops[i]++;
+        }
+        requestAnimationFrame(drawMatrix);
+      }
+      requestAnimationFrame(drawMatrix);
+    }
+
+    // 2. Authentic Matrix Typing Sequence
+    const typewriterContainer = document.querySelector(".matrix-typewriter-container");
+    let phrases = [
+      "Wake up, Operative...",
+      "The Matrix has you...",
+      "Follow the white rabbit.",
+      "Knock, knock, Hacker."
+    ];
+    if (typewriterContainer && typewriterContainer.getAttribute("data-phrases")) {
+      phrases = typewriterContainer.getAttribute("data-phrases").split('\n').map(p => p.trim()).filter(Boolean);
+    } else {
+      const rawPhrases = {{ (Configs.world_matrix_typing_phrases or "") | tojson }};
+      if (rawPhrases && rawPhrases.trim()) {
+        phrases = rawPhrases.split('\n').map(p => p.trim()).filter(Boolean);
+      }
+    }
+
+    const textEl = document.getElementById("matrix-typewriter-text");
+    const cursorEl = document.getElementById("matrix-cursor");
+    const telemetryEl = document.getElementById("matrix-telemetry");
+    const actionsEl = document.getElementById("matrix-actions");
+    const skipHintEl = document.getElementById("matrix-skip-hint");
+    const heroContainer = document.getElementById("matrix-hero-container");
+
+    let isSkipped = false;
+    let typeTimeout = null;
+
+    function finishSequence() {
+      if (isSkipped) return;
+      isSkipped = true;
+      if (typeTimeout) clearTimeout(typeTimeout);
+
+      const lastPhrase = phrases.length > 0 ? phrases[phrases.length - 1] : "Knock, knock, Hacker.";
+      if (textEl) textEl.textContent = lastPhrase;
+      if (telemetryEl) telemetryEl.style.display = "block";
+      if (actionsEl) actionsEl.style.display = "flex";
+      if (skipHintEl) skipHintEl.style.display = "none";
+    }
+
+    if (!textEl) {
+      if (telemetryEl) telemetryEl.style.display = "block";
+      if (actionsEl) actionsEl.style.display = "flex";
+      if (skipHintEl) skipHintEl.style.display = "none";
+      return;
+    }
+
+    // Skip on user interaction
+    if (heroContainer) {
+      heroContainer.addEventListener("click", (e) => {
+        if (!e.target.closest("a") && !e.target.closest("button")) {
+          finishSequence();
+        }
+      });
+    }
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
+        finishSequence();
+      }
+    });
+
+    let phraseIdx = 0;
+    let charIdx = 0;
+
+    function typeNextChar() {
+      if (isSkipped) return;
+
+      const currentPhrase = phrases[phraseIdx];
+      if (charIdx < currentPhrase.length) {
+        textEl.textContent += currentPhrase.charAt(charIdx);
+        charIdx++;
+        typeTimeout = setTimeout(typeNextChar, 65 + Math.random() * 45);
+      } else {
+        // Finished typing current phrase
+        if (phraseIdx < phrases.length - 1) {
+          // Pause, then clear and move to next phrase
+          const pauseTime = phraseIdx === 2 ? 1800 : 1400;
+          typeTimeout = setTimeout(() => {
+            if (isSkipped) return;
+            textEl.textContent = "";
+            charIdx = 0;
+            phraseIdx++;
+            typeTimeout = setTimeout(typeNextChar, 350);
+          }, pauseTime);
+        } else {
+          // Final phrase finished: reveal telemetry and actions!
+          typeTimeout = setTimeout(() => {
+            finishSequence();
+          }, 1200);
+        }
+      }
+    }
+
+    typeTimeout = setTimeout(typeNextChar, 800);
+  })();
+  </script>
+  {% endif %}
+{% endblock %}

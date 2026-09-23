@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="countdown-page-wrapper position-relative">
+  <div class="matrix-grid-bg"></div>
+  
+  <!-- Subtle Greyed-out World Map Background -->
+  <div class="countdown-map-bg">
+    <svg id="countdown-bg-svg" class="countdown-map-svg" viewBox="0 0 1008 651" preserveAspectRatio="xMidYMid slice"></svg>
+  </div>
+
+  <div class="container text-center countdown-container position-relative" style="z-index: 2;">
+    <!-- Digits Grid Box (Mounted into #countdown-clock-placeholder if present) -->
+    <div id="countdown-clock-box">
+      <div class="row justify-content-center g-3 mb-5 countdown-cards-row">
+        <div class="col-6 col-md-3 col-lg-2">
+          <div class="cyber-digit-card">
+            <div class="cyber-digit-value" id="count-days">00</div>
+            <div class="cyber-digit-label">DAYS</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+          <div class="cyber-digit-card">
+            <div class="cyber-digit-value" id="count-hours">00</div>
+            <div class="cyber-digit-label">HOURS</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+          <div class="cyber-digit-card">
+            <div class="cyber-digit-value" id="count-minutes">00</div>
+            <div class="cyber-digit-label">MINUTES</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+          <div class="cyber-digit-card">
+            <div class="cyber-digit-value" id="count-seconds">00</div>
+            <div class="cyber-digit-label">SECONDS</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Target Date Display -->
+      <div class="countdown-target-info mb-4">
+        <span class="font-monospace text-muted">TARGET TIMESTAMP: </span>
+        <span class="font-monospace text-success fw-bold" id="countdown-target-display">PENDING CONFIGURATION</span>
+      </div>
+    </div>
+
+    <!-- Custom Mission Content (HTML / Markdown) -->
+    <div id="countdown-custom-content" class="countdown-custom-content mb-4">
+      {% if config.content %}
+        {% if config.format == 'markdown' %}
+          {{ config.content | markdown | safe }}
+        {% else %}
+          {{ config.content | safe }}
+        {% endif %}
+      {% else %}
+        <div class="hud-status-badge mb-3">
+          <span class="pulse-dot"></span>
+          <span id="countdown-status-text">MISSION TELEMETRY // SECURE COUNTDOWN</span>
+        </div>
+
+        <h1 class="countdown-title mb-2" id="countdown-heading">OPERATION COMMENCES IN</h1>
+        <p class="countdown-subtitle text-muted mb-5 font-monospace" id="countdown-sub">SYNCHRONIZING WITH CTF MASTER CLOCK</p>
+
+        <div class="d-flex justify-content-center gap-3">
+          <a id="countdown-btn1" href="{{ url_for('challenges.listing') }}" class="btn btn-outline-success font-monospace px-4 py-2">
+            <i class="fas fa-terminal me-2"></i> <span>CHALLENGE GRID</span>
+          </a>
+          <a id="countdown-btn2" href="{{ url_for('views.static_html', route='/') }}" class="btn btn-outline-secondary font-monospace px-4 py-2">
+            <i class="fas fa-home me-2"></i> <span>HEADQUARTERS</span>
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  let targetTimestamp = null;
+  let redirectOnZero = true;
+
+  // Load subtle background world map
+  fetch("/api/v1/world/countries")
+    .then(r => r.json())
+    .then(data => {
+      if (data.success && data.data) {
+        const svg = document.getElementById("countdown-bg-svg");
+        if (!svg) return;
+        const frag = document.createDocumentFragment();
+        Object.values(data.data).forEach(c => {
+          if (c.d) {
+            const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            p.setAttribute("d", c.d);
+            p.setAttribute("class", "countdown-map-land");
+            frag.appendChild(p);
+          }
+        });
+        svg.appendChild(frag);
+      }
+    })
+    .catch(() => {});
+
+  function placeClock() {
+    const placeholder = document.getElementById("countdown-clock-placeholder");
+    const clockBox = document.getElementById("countdown-clock-box");
+    if (placeholder && clockBox && placeholder !== clockBox.parentNode) {
+      placeholder.appendChild(clockBox);
+    }
+  }
+  placeClock();
+
+  // Fetch settings from World Theme settings endpoint
+  fetch("/api/v1/world/settings")
+    .then(r => r.json())
+    .then(data => {
+      if (data.success && data.data) {
+        const s = data.data;
+        if (s.countdown_time) {
+          targetTimestamp = new Date(s.countdown_time).getTime();
+        }
+        if (s.countdown_content) {
+          const customEl = document.getElementById("countdown-custom-content");
+          if (customEl && !customEl.innerHTML.trim()) {
+            customEl.innerHTML = s.countdown_content;
+          }
+          placeClock();
+        }
+        redirectOnZero = s.countdown_redirect !== false;
+      }
+      
+      // Fallback to CTFd start time if not explicitly set in theme settings
+      if (!targetTimestamp && window.init && window.init.start) {
+        targetTimestamp = window.init.start * 1000;
+      }
+
+      initTimer();
+    })
+    .catch(() => {
+      if (window.init && window.init.start) {
+        targetTimestamp = window.init.start * 1000;
+      }
+      initTimer();
+    });
+
+  function initTimer() {
+    const targetDisplay = document.getElementById("countdown-target-display");
+    if (targetTimestamp) {
+      targetDisplay.textContent = new Date(targetTimestamp).toUTCString();
+    } else {
+      targetDisplay.textContent = "NO LAUNCH TIME CONFIGURED";
+    }
+
+    function update() {
+      if (!targetTimestamp) {
+        document.getElementById("count-days").textContent = "00";
+        document.getElementById("count-hours").textContent = "00";
+        document.getElementById("count-minutes").textContent = "00";
+        document.getElementById("count-seconds").textContent = "00";
+        return;
+      }
+
+      const now = Date.now();
+      const diff = targetTimestamp - now;
+
+      if (diff <= 0) {
+        document.getElementById("count-days").textContent = "00";
+        document.getElementById("count-hours").textContent = "00";
+        document.getElementById("count-minutes").textContent = "00";
+        document.getElementById("count-seconds").textContent = "00";
+        document.getElementById("countdown-status-text").textContent = "OPERATION LIVE // ALL NODES UNLOCKED";
+        document.getElementById("countdown-sub").textContent = "COMMENCING AUTOMATIC REDIRECT TO TARGET GRID...";
+
+        if (redirectOnZero) {
+          setTimeout(() => {
+            window.location.href = "/challenges";
+          }, 2500);
+        }
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      document.getElementById("count-days").textContent = String(days).padStart(2, "0");
+      document.getElementById("count-hours").textContent = String(hours).padStart(2, "0");
+      document.getElementById("count-minutes").textContent = String(minutes).padStart(2, "0");
+      document.getElementById("count-seconds").textContent = String(seconds).padStart(2, "0");
+    }
+
+    update();
+    setInterval(update, 1000);
+  }
+})();
+</script>
+{% endblock %}
