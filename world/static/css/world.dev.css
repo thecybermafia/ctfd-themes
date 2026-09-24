@@ -2119,26 +2119,7 @@ body:has(#matrix-hero-container) footer {
 
 .tactical-auth-header {
   text-align: center;
-  margin-bottom: 1.75rem;
-}
-
-.tactical-auth-badge {
-  font-family: var(--matrix-font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 1.5px;
-  color: #94a3b8 !important;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-bottom: 0.4rem;
-}
-
-.tactical-auth-badge .status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--matrix-green-bright);
-  box-shadow: 0 0 8px var(--matrix-green-bright);
+  margin-bottom: 1.5rem;
 }
 
 .tactical-auth-title {
@@ -2230,6 +2211,78 @@ body:has(#matrix-hero-container) footer {
 
 .tactical-auth-fallback-banner .text-muted {
   color: #cbd5e1 !important;
+}
+
+/* Light Mode Overrides for Login Page */
+[data-bs-theme="light"] .auth-page-container {
+  background: #f1f5f9 !important;
+}
+
+[data-bs-theme="light"] .tactical-auth-card {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  color: #0f172a !important;
+}
+
+[data-bs-theme="light"] .tactical-auth-card::before {
+  background: linear-gradient(90deg, transparent, #059669, transparent) !important;
+}
+
+[data-bs-theme="light"] .tactical-auth-title {
+  color: #059669 !important;
+  text-shadow: none !important;
+}
+
+[data-bs-theme="light"] .tactical-auth-card .form-label,
+[data-bs-theme="light"] .tactical-auth-card label,
+[data-bs-theme="light"] .tactical-auth-card b {
+  color: #1e293b !important;
+}
+
+[data-bs-theme="light"] .tactical-auth-card .form-control {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+[data-bs-theme="light"] .tactical-auth-card .form-control:focus {
+  border-color: #059669 !important;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.18) !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+[data-bs-theme="light"] .tactical-auth-card .form-control::placeholder {
+  color: #94a3b8 !important;
+}
+
+[data-bs-theme="light"] .tactical-auth-card .btn-submit-auth {
+  background: #059669 !important;
+  color: #ffffff !important;
+}
+
+[data-bs-theme="light"] .tactical-auth-card .btn-submit-auth:hover {
+  background: #047857 !important;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35) !important;
+}
+
+[data-bs-theme="light"] .tactical-auth-card .forgot-link {
+  color: #64748b !important;
+}
+
+[data-bs-theme="light"] .tactical-auth-card .forgot-link:hover {
+  color: #059669 !important;
+}
+
+[data-bs-theme="light"] .tactical-auth-fallback-banner {
+  background: #fef3c7 !important;
+  border: 1px solid #f59e0b !important;
+  color: #92400e !important;
+}
+
+[data-bs-theme="light"] .tactical-auth-fallback-banner .text-muted {
+  color: #78350f !important;
 }
 
 
