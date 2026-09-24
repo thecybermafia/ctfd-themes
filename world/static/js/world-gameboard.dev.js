@@ -160,11 +160,15 @@ window.WorldGameboard = function() {
         if (worldJson.success && worldJson.data) {
           this.countriesData = worldJson.data;
 
-          // Map challenge IDs to country names
+          // Map challenge IDs to country names, iso, and status
           const chalToCountry = {};
+          const chalToIso = {};
+          const chalToStatus = {};
           Object.values(this.countriesData).forEach(c => {
             if (c.challenge) {
               chalToCountry[c.challenge.id] = c.name;
+              chalToIso[c.challenge.id] = c.iso;
+              chalToStatus[c.challenge.id] = c.status;
             }
           });
 
@@ -172,7 +176,8 @@ window.WorldGameboard = function() {
           let allChals = (chalsJson.data || []).map(c => ({
             ...c,
             country_name: chalToCountry[c.id] || "",
-            country_iso: ""
+            country_iso: chalToIso[c.id] || "",
+            status: chalToStatus[c.id] || (c.solved_by_me ? "captured_by_you" : "active")
           }));
 
           // If /api/v1/challenges didn't return any, fallback to countriesData challenges
@@ -182,7 +187,8 @@ window.WorldGameboard = function() {
                 allChals.push({
                   ...c.challenge,
                   country_name: c.name,
-                  country_iso: c.iso
+                  country_iso: c.iso,
+                  status: c.status
                 });
               }
             });
@@ -574,10 +580,34 @@ window.WorldGameboard = function() {
       }
     },
 
+    getActiveNodesCount() {
+      if (!this.challenges) return 0;
+      return this.challenges.filter(c => {
+        if (this.selectedCategory && c.category !== this.selectedCategory) return false;
+        return true;
+      }).length;
+    },
+
+    getBreachedCount() {
+      if (!this.challenges) return 0;
+      return this.challenges.filter(c => {
+        if (this.selectedCategory && c.category !== this.selectedCategory) return false;
+        return !!c.solved_by_me;
+      }).length;
+    },
+
+    getHostileCount() {
+      if (!this.challenges) return 0;
+      return this.challenges.filter(c => {
+        if (this.selectedCategory && c.category !== this.selectedCategory) return false;
+        return !c.solved_by_me && c.status === "captured_by_opponent";
+      }).length;
+    },
+
     filteredListChallenges() {
       return this.challenges.filter(c => {
         if (this.currentFilter === "mine" && !c.solved_by_me) return false;
-        if (this.currentFilter === "others" && c.solved_by_me) return false;
+        if (this.currentFilter === "others" && (c.solved_by_me || c.status !== "captured_by_opponent")) return false;
         if (this.selectedCategory && c.category !== this.selectedCategory) return false;
         return true;
       });
