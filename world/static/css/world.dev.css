@@ -944,6 +944,8 @@ body.modal-open .gameboard-hud-header {
 .country-hover-tooltip {
   position: absolute;
   display: none;
+  top: -9999px;
+  left: -9999px;
   background: rgba(11, 18, 14, 0.95);
   border: 1px solid rgba(0, 230, 118, 0.28);
   padding: 10px 14px;
@@ -989,6 +991,23 @@ body.modal-open .gameboard-hud-header {
 
 [data-bs-theme="light"] .country-hover-tooltip .c-chal {
   color: #022c22;
+}
+
+/* Custom Challenge Modal Full-Width Layout */
+.submit-row:has(#textarea-challenge-container) > div:first-child,
+.submit-row:has(#image-upload-container) > div:first-child,
+.submit-row:has(.bingo-wrapper) > div:first-child,
+.submit-row:has(.crossword-wrapper) > div:first-child {
+  flex: 0 0 100% !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+.submit-row:has(#textarea-challenge-container) > .key-submit,
+.submit-row:has(#image-upload-container) > .key-submit,
+.submit-row:has(.bingo-wrapper) > .key-submit,
+.submit-row:has(.crossword-wrapper) > .key-submit {
+  display: none !important;
 }
 
 

@@ -1,9 +1,31 @@
-/**
- * CTFd World Theme - Matrix Cyber Operations Console
- * Interactive SVG Threat Matrix Gameboard Engine
- * Precision SVG Centroid Zoom, Clamped Pan, Native Challenge Modal Integration
- * Zero Emojis - Pure CRT Terminal Visuals
- */
+// Ensure CTFd._internal.challenge always has preRender/postRender guards
+(function() {
+  if (typeof window !== "undefined") {
+    if (!window.CTFd) window.CTFd = {};
+    if (!window.CTFd._internal) window.CTFd._internal = {};
+    let _chal = window.CTFd._internal.challenge || {};
+    if (!_chal.preRender) _chal.preRender = function() {};
+    if (!_chal.postRender) _chal.postRender = function() {};
+    try {
+      Object.defineProperty(window.CTFd._internal, "challenge", {
+        get() {
+          if (!_chal.preRender) _chal.preRender = function() {};
+          if (!_chal.postRender) _chal.postRender = function() {};
+          return _chal;
+        },
+        set(val) {
+          _chal = val || {};
+          if (!_chal.preRender) _chal.preRender = function() {};
+          if (!_chal.postRender) _chal.postRender = function() {};
+        },
+        configurable: true,
+        enumerable: true
+      });
+    } catch (e) {
+      console.warn("Could not define CTFd._internal.challenge proxy:", e);
+    }
+  }
+})();
 
 const CALIBRATED_CENTROIDS = {"AE": [627.84, 396.25], "AF": [661.95, 361.91], "AL": [531.47, 338.82], "AM": [600.24, 339.32], "AO": [524.86, 500.51], "AR": [296.09, 552.82], "AT": [515.99, 312.14], "AU": [845.86, 530.31], "AZ": [607.53, 340.31], "BA": [525.54, 325.69], "BD": [727.58, 394.34], "BE": [488.28, 298.9], "BF": [472.37, 427.35], "BG": [545.42, 331.78], "BI": [559.0, 473.02], "BJ": [481.99, 433.88], "BN": [797.73, 450.24], "BO": [293.81, 510.55], "BR": [337.78, 496.81], "BS": [256.46, 392.38], "BT": [727.73, 383.56], "BW": [543.21, 526.18], "BY": [554.57, 286.24], "BZ": [226.57, 414.14], "CA": [157.99, 255.21], "CD": [540.69, 468.15], "CF": [535.7, 444.07], "CG": [519.68, 463.16], "CH": [496.43, 315.63], "CI": [459.5, 442.41], "CL": [270.25, 606.56], "CM": [509.37, 450.52], "CN": [778.45, 365.9], "CO": [269.73, 453.98], "CR": [239.78, 435.18], "CU": [256.84, 402.34], "CY": [568.34, 359.0], "CZ": [515.95, 302.01], "DE": [504.23, 292.94], "DJ": [593.68, 431.0], "DK": [501.22, 271.78], "DO": [276.53, 409.1], "DZ": [482.98, 383.44], "EC": [255.42, 466.73], "EE": [547.7, 259.55], "EG": [557.66, 388.25], "EH": [434.07, 397.99], "ER": [581.67, 417.84], "ES": [464.97, 343.5], "ET": [582.72, 439.1], "FI": [547.99, 237.62], "FJ": [973.81, 513.91], "FK": [311.18, 632.05], "FR": [481.45, 312.58], "GA": [505.87, 465.75], "GB": [470.72, 291.44], "GE": [594.72, 332.88], "GF": [326.61, 451.94], "GH": [471.82, 443.97], "GL": [359.56, 101.2], "GM": [430.4, 425.79], "GN": [447.5, 433.73], "GQ": [504.61, 458.74], "GR": [535.9, 342.94], "GT": [221.5, 421.15], "GW": [432.62, 429.86], "GY": [310.19, 447.65], "HN": [230.8, 421.91], "HR": [521.64, 319.33], "HT": [272.8, 408.64], "HU": [531.38, 313.71], "ID": [795.7, 466.29], "IE": [453.57, 287.6], "IL": [573.01, 372.6], "IN": [697.02, 398.86], "IQ": [595.99, 365.4], "IR": [629.45, 367.67], "IS": [422.98, 223.19], "IT": [504.88, 321.94], "JM": [258.51, 412.1], "JO": [577.31, 373.33], "JP": [864.73, 355.28], "KE": [581.34, 462.13], "KG": [685.12, 335.05], "KH": [767.89, 427.93], "KP": [829.56, 341.26], "KR": [834.06, 355.35], "KW": [608.61, 377.29], "KZ": [670.62, 307.63], "LA": [762.96, 407.6], "LB": [576.7, 361.47], "LK": [701.73, 442.76], "LR": [446.62, 443.93], "LS": [554.59, 549.6], "LT": [543.3, 277.36], "LU": [491.94, 303.46], "LV": [549.36, 270.34], "LY": [532.02, 387.69], "MA": [456.12, 370.01], "MD": [554.55, 311.95], "ME": [529.13, 330.79], "MG": [606.1, 514.97], "MK": [535.51, 335.62], "ML": [470.0, 410.64], "MM": [744.51, 401.85], "MN": [768.71, 317.68], "MR": [447.99, 408.79], "MW": [569.68, 500.75], "MX": [189.64, 395.52], "MY": [794.38, 456.77], "MZ": [582.07, 502.64], "NA": [522.92, 521.56], "NC": [938.36, 523.24], "NE": [503.45, 413.85], "NG": [495.73, 436.78], "NI": [236.74, 428.04], "NL": [491.19, 290.34], "NO": [499.74, 246.65], "NP": [704.47, 378.13], "NZ": [949.71, 604.99], "OM": [636.33, 399.98], "PA": [248.28, 440.09], "PE": [270.9, 500.15], "PG": [876.89, 479.53], "PH": [815.63, 415.34], "PK": [663.23, 383.07], "PL": [530.2, 291.89], "PR": [287.59, 411.68], "PS": [574.19, 369.23], "PT": [451.81, 344.92], "PY": [306.61, 525.17], "QA": [618.76, 390.47], "RO": [545.22, 319.4], "RS": [533.53, 325.96], "RU": [757.99, 219.76], "RW": [560.07, 468.51], "SA": [600.9, 395.61], "SB": [922.09, 485.89], "SD": [557.77, 416.09], "SE": [530.07, 210.19], "SI": [516.95, 318.44], "SJ": [518.7, 89.46], "SK": [528.61, 307.03], "SL": [441.98, 439.79], "SN": [433.43, 420.5], "SO": [611.87, 436.67], "SR": [318.32, 451.67], "SS": [560.54, 443.47], "SV": [225.06, 424.29], "SY": [582.83, 358.77], "SZ": [563.19, 540.06], "TD": [529.51, 414.15], "TF": [669.76, 622.05], "TG": [478.19, 438.52], "TH": [759.23, 419.77], "TJ": [678.97, 347.4], "TL": [826.88, 488.34], "TM": [639.95, 342.5], "TN": [500.41, 363.18], "TR": [570.79, 343.56], "TT": [303.4, 434.09], "TW": [813.85, 396.1], "TZ": [570.78, 478.81], "UA": [565.79, 305.32], "UG": [567.72, 457.91], "US": [193.53, 340.36], "UY": [318.37, 560.62], "UZ": [654.03, 334.06], "VE": [295.19, 443.43], "VN": [770.43, 401.23], "VU": [943.28, 506.62], "XK": [533.86, 331.99], "YE": [601.37, 420.26], "ZA": [544.3, 550.6], "ZM": [548.78, 504.82], "ZW": [559.04, 516.84]};
 
@@ -303,8 +325,7 @@ window.WorldGameboard = function() {
 
         // Hover & click events for active nodes
         if (c.status !== "inactive" && c.challenge) {
-          group.addEventListener("mouseenter", () => {
-            if (this.targetingActive) return;
+          const updateTooltipContent = () => {
             ttName.textContent = `${c.name} [${c.iso}]`;
             ttChal.textContent = c.challenge.name;
             ttCat.textContent = c.challenge.category || "EXPLOIT";
@@ -323,19 +344,33 @@ window.WorldGameboard = function() {
               ttStatus.style.color = "var(--matrix-green-bright)";
               ttStatus.className = "mt-1 fw-bold font-monospace";
             }
-            tooltip.style.display = "block";
+          };
+
+          group.addEventListener("mouseenter", (e) => {
+            if (this.targetingActive) return;
+            updateTooltipContent();
           });
 
           group.addEventListener("mousemove", (e) => {
-            tooltip.style.left = (e.pageX + 18) + "px";
-            tooltip.style.top = (e.pageY + 18) + "px";
+            if (this.targetingActive) return;
+            updateTooltipContent();
+            if (e.pageX && e.pageY) {
+              tooltip.style.left = (e.pageX + 18) + "px";
+              tooltip.style.top = (e.pageY + 18) + "px";
+              tooltip.style.display = "block";
+            }
           });
 
           group.addEventListener("mouseleave", () => {
             tooltip.style.display = "none";
+            tooltip.style.top = "-9999px";
+            tooltip.style.left = "-9999px";
           });
 
           group.addEventListener("click", () => {
+            tooltip.style.display = "none";
+            tooltip.style.top = "-9999px";
+            tooltip.style.left = "-9999px";
             this.engageCountry(c);
           });
         }
@@ -347,7 +382,11 @@ window.WorldGameboard = function() {
     engageCountry(c) {
       if (!c.challenge) return;
       const tooltip = document.getElementById("country-tooltip");
-      if (tooltip) tooltip.style.display = "none";
+      if (tooltip) {
+        tooltip.style.display = "none";
+        tooltip.style.top = "-9999px";
+        tooltip.style.left = "-9999px";
+      }
 
       this.targetingActive = true;
 
