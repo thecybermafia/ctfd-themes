@@ -46,8 +46,8 @@ The World Theme consists of two integrated components:
 - **Tactical Telemetry Bar (Grid View)**: High-density Matrix Grid View features a dedicated status telemetry bar reporting categorized challenge counts (`Active Nodes`, `Breached (You)`, and `Hostile Presence`).
 - **Sectors Dropdown**: Filter visible map nodes by geographic region (Americas, Europe, Asia-Pacific, Africa, Middle East).
 - **View Toggle**: Switch effortlessly between the Tactical World Map and a high-density Matrix Grid View.
-- **Interactive Guide Button**: Instant access to mission rules and operational briefings.
-- **Enterprise SSO & Custom Challenges**: Fully integrated login portal with dynamic Single Sign-On button and seamless support for custom challenge modals (`textarea`, `image_upload`, `bingo`, `crossword`).
+- **Compact Tactical Authentication Card**: Sleek, centered cybernetic login interface (`max-width: 440px`) with glowing neon accents, high-contrast inputs, dynamic Single Sign-On button, and CTFd doc-compliant local fallback banner (`/login?fallback=1`).
+- **Seamless Custom Challenge Modals**: Built-in styling for custom challenges (`textarea`, `image_upload`, `bingo`, `crossword`).
 
 ### 📊 Orbital Scoreboard Telemetry
 - Dark cybernetic scoreboard table with glowing neon ranking badges and integrated ECharts progression telemetry.

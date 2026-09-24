@@ -2079,3 +2079,157 @@ body:has(#matrix-hero-container) footer {
 .feed-country-badge:hover {
   opacity: 0.85;
 }
+
+/* ==========================================================================
+   AUTHENTICATION INTERFACE (COMPACT TACTICAL AUTH CARD)
+   ========================================================================== */
+
+.auth-page-container {
+  min-height: calc(100vh - 180px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+}
+
+.tactical-auth-card {
+  width: 100%;
+  max-width: 440px !important;
+  margin: 0 auto !important;
+  background: rgba(7, 18, 11, 0.95) !important;
+  border: 1px solid var(--matrix-border) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.8), 0 0 25px rgba(0, 255, 65, 0.1) !important;
+  backdrop-filter: blur(16px);
+  position: relative;
+  overflow: hidden;
+  padding: 2.2rem 2.2rem !important;
+  color: #e2e8f0 !important;
+}
+
+.tactical-auth-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--matrix-green-bright), transparent);
+}
+
+.tactical-auth-header {
+  text-align: center;
+  margin-bottom: 1.75rem;
+}
+
+.tactical-auth-badge {
+  font-family: var(--matrix-font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 1.5px;
+  color: #94a3b8 !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.tactical-auth-badge .status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--matrix-green-bright);
+  box-shadow: 0 0 8px var(--matrix-green-bright);
+}
+
+.tactical-auth-title {
+  font-family: var(--matrix-font-display);
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--matrix-green-bright) !important;
+  letter-spacing: 2px;
+  text-shadow: 0 0 12px rgba(0, 255, 65, 0.4);
+  margin-bottom: 0;
+}
+
+.tactical-auth-card .form-label,
+.tactical-auth-card label,
+.tactical-auth-card b {
+  font-family: var(--matrix-font-mono);
+  font-size: 0.82rem;
+  color: #e2e8f0 !important;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.35rem;
+}
+
+.tactical-auth-card .form-control {
+  background: rgba(0, 0, 0, 0.7) !important;
+  border: 1px solid var(--matrix-border) !important;
+  color: #ffffff !important;
+  font-family: var(--matrix-font-mono);
+  font-size: 0.9rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.tactical-auth-card .form-control:focus {
+  border-color: var(--matrix-green-bright) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 65, 0.35) !important;
+  background: rgba(0, 0, 0, 0.85) !important;
+  color: #ffffff !important;
+}
+
+.tactical-auth-card .form-control::placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+  font-size: 0.85rem;
+}
+
+.tactical-auth-card .btn-submit-auth {
+  font-family: var(--matrix-font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  padding: 0.7rem 1.25rem;
+  border-radius: 4px;
+  background: var(--matrix-green-bright) !important;
+  color: #000 !important;
+  border: none !important;
+  transition: all 0.2s ease;
+}
+
+.tactical-auth-card .btn-submit-auth:hover {
+  background: #39ff7a !important;
+  box-shadow: 0 0 16px rgba(0, 255, 65, 0.6) !important;
+  transform: translateY(-1px);
+}
+
+.tactical-auth-card .forgot-link {
+  font-family: var(--matrix-font-mono);
+  font-size: 0.82rem;
+  color: #94a3b8 !important;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.tactical-auth-card .forgot-link:hover {
+  color: var(--matrix-green-bright) !important;
+  text-decoration: underline;
+}
+
+.tactical-auth-fallback-banner {
+  background: rgba(255, 170, 0, 0.15) !important;
+  border: 1px solid rgba(255, 170, 0, 0.5) !important;
+  color: #ffb822 !important;
+  border-radius: 4px;
+  padding: 0.6rem 0.8rem;
+  font-family: var(--matrix-font-mono);
+  font-size: 0.78rem;
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+.tactical-auth-fallback-banner .text-muted {
+  color: #cbd5e1 !important;
+}
+
+

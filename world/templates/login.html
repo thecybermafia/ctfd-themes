@@ -1,20 +1,32 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <div class="jumbotron">
-    <div class="container">
-      <h1>
-        {% trans %}Login{% endtrans %}
-      </h1>
-    </div>
-  </div>
+  <div class="auth-page-container">
+    <div class="tactical-auth-card card">
+      <!-- Tactical Card Cyber Header -->
+      <div class="tactical-auth-header">
+        <div class="tactical-auth-badge">
+          <span class="status-dot"></span> ACCESS CONTROLLER // AUTHENTICATION
+        </div>
+        <h2 class="tactical-auth-title">
+          {% trans %}LOGIN{% endtrans %}
+        </h2>
+      </div>
 
-  <div class="container">
-    <div class="row">
-      <div class="col-md-8 col offset-md-2 col-lg-6 offset-lg-3">
-        {% include "components/errors.html" %}
+      {% include "components/errors.html" %}
 
-        {% if Configs.sso_provider and Configs.sso_provider != 'disabled' %}
+      {% if Configs.sso_provider and Configs.sso_provider != 'disabled' %}
+        {% if request.args.get('fallback') == '1' %}
+          <div class="tactical-auth-fallback-banner">
+            <i class="fas fa-exclamation-triangle me-1"></i> <strong>LOCAL ACCOUNT FALLBACK MODE</strong>
+            <div class="text-muted small mt-1">Logging in using local CTFd credentials.</div>
+          </div>
+          <div class="mb-3 text-center">
+            <a class="btn btn-outline-primary btn-sm w-100 font-monospace" href="/sso/login">
+              <i class="fas fa-arrow-left me-1"></i> Use Single Sign-On ({{ Configs.sso_provider | upper }})
+            </a>
+          </div>
+        {% else %}
           <div class="mb-3">
             <a class="btn btn-primary btn-lg btn-block w-100 font-display shadow-sm" href="/sso/login">
               {% if Configs.sso_provider == 'github' %}
@@ -34,60 +46,58 @@
             </a>
           </div>
 
-          {% if Configs.sso_user_settings == 'all_users' %}
-            <div class="alert alert-info py-2 small font-monospace text-center mb-3">
-              <i class="fas fa-info-circle me-1"></i> Single Sign-On is required for all operators.
-            </div>
-          {% else %}
-            <div class="position-relative text-center my-3">
-              <hr>
-              <span class="px-2 text-muted small bg-body position-absolute top-50 start-50 translate-middle font-monospace">OR STANDARD LOGIN</span>
-            </div>
+          <div class="position-relative text-center my-3">
+            <hr>
+            <span class="px-2 text-muted small bg-body position-absolute top-50 start-50 translate-middle font-monospace">OR LOCAL FALLBACK</span>
+          </div>
+        {% endif %}
+      {% endif %}
+
+      {% if integrations.mlc() %}
+        <a class="btn btn-secondary btn-lg btn-block w-100 mb-3" href="{{ url_for('auth.oauth_login') }}">
+          Login with Major League Cyber
+        </a>
+        <hr>
+      {% endif %}
+
+      {% with form = Forms.auth.LoginForm() %}
+        <form method="post" action="{{ url_for('auth.login', fallback=request.args.get('fallback', '1') if (Configs.sso_provider and Configs.sso_provider != 'disabled') else None, next=request.args.get('next')) }}" accept-charset="utf-8">
+          {% if request.args.get('fallback') == '1' %}
+            <input type="hidden" name="fallback" value="1">
           {% endif %}
-        {% endif %}
+          {% if request.args.get('next') %}
+            <input type="hidden" name="next" value="{{ request.args.get('next') }}">
+          {% endif %}
 
-        {% if integrations.mlc() %}
-          <a class="btn btn-secondary btn-lg btn-block w-100" href="{{ url_for('auth.oauth_login') }}">
-            Login with Major League Cyber
-          </a>
+          <div class="mb-3">
+            <b>
+              {{ form.name.label(class="form-label") }}
+              <span class="text-danger">*</span>
+            </b>
+            {{ form.name(class="form-control", value=name, autocomplete="username email", placeholder="Enter username or email") }}
+          </div>
 
-          <hr>
-        {% endif %}
+          <div class="mb-3">
+            <b>
+              {{ form.password.label(class="form-label") }}
+              <span class="text-danger">*</span>
+            </b>
+            {{ form.password(class="form-control", value=password, autocomplete="current-password", placeholder="Enter password") }}
+          </div>
 
-        {% with form = Forms.auth.LoginForm() %}
-          <form method="post" accept-charset="utf-8">
-            <div class="mb-3">
-              <b>
-                {{ form.name.label(class="form-label") }}
-                <span class="text-danger">*</span>
-              </b>
-              {{ form.name(class="form-control", value=name, autocomplete="username email") }}
-            </div>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <a class="forgot-link" href="{{ url_for('auth.reset_password') }}">
+              {% trans %}Forgot your password?{% endtrans %}
+            </a>
+          </div>
 
-            <div class="mb-3">
-              <b>
-                {{ form.password.label(class="form-label") }}
-                <span class="text-danger">*</span>
-              </b>
-              {{ form.password(class="form-control", value=password, autocomplete="current-password") }}
-            </div>
+          <div class="mt-4">
+            {{ form.submit(class="btn btn-primary btn-submit-auth w-100 shadow") }}
+          </div>
 
-            <div class="row pt-3">
-              <div class="col-6 col-md-8">
-                <a class="align-middle" href="{{ url_for('auth.reset_password') }}">
-                  {% trans %}Forgot your password?{% endtrans %}
-                </a>
-              </div>
-
-              <div class="col-6 col-md-4">
-                {{ form.submit(class="btn btn-block btn-primary w-100") }}
-              </div>
-            </div>
-
-            {{ form.nonce() }}
-          </form>
-        {% endwith %}
-      </div>
+          {{ form.nonce() }}
+        </form>
+      {% endwith %}
     </div>
   </div>
 {% endblock %}

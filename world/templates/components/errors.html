@@ -1,5 +1,6 @@
+<div>
   {% for category, message in get_flashed_messages(with_categories=true) %}
-    <div class="alert alert-{{ 'danger' if category == 'danger' or category == 'error' else 'info' }} alert-dismissible text-center" role="alert">
+    <div class="alert alert-{{ 'danger' if category == 'danger' or category == 'error' else ('warning' if category == 'warning' else 'info') }} alert-dismissible text-center" role="alert">
       <span>{{ message }}</span>
       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close">
         <span aria-hidden="true"></span>
