@@ -37,7 +37,7 @@
             @click="setFilter('all')"
           >
             <span>ALL NODES</span>
-            <span class="hud-filter-count font-monospace ms-1 text-cyan" x-text="'(' + getActiveNodesCount() + ')'"></span>
+            <span class="hud-filter-count font-monospace ms-1 text-cyan" x-show="getActiveNodesCount() > 0" x-text="'(' + getActiveNodesCount() + ')'"></span>
           </button>
           <button 
             type="button" 
@@ -47,7 +47,7 @@
             @click="setFilter('mine')"
           >
             <span>BREACHED (YOU)</span>
-            <span class="hud-filter-count font-monospace ms-1 text-success" x-text="'(' + getBreachedCount() + ')'"></span>
+            <span class="hud-filter-count font-monospace ms-1 text-success" x-show="getBreachedCount() > 0" x-text="'(' + getBreachedCount() + ')'"></span>
           </button>
           <button 
             type="button" 
@@ -57,7 +57,7 @@
             @click="setFilter('others')"
           >
             <span>HOSTILE</span>
-            <span class="hud-filter-count font-monospace ms-1 text-danger" x-text="'(' + getHostileCount() + ')'"></span>
+            <span class="hud-filter-count font-monospace ms-1 text-danger" x-show="getHostileCount() > 0" x-text="'(' + getHostileCount() + ')'"></span>
           </button>
         </div>
       </div>
@@ -289,21 +289,6 @@
     <!-- Tabular List View (Offset to guarantee NO collision with fixed HUD header or live feed) -->
     <div class="container py-4 challenges-list-container" :class="{ 'with-livefeed': liveFeedEnabled && liveFeedOpen && !liveFeedMinimized }" x-show="listView">
       
-      <!-- Tactical Telemetry Status Bar for Grid View -->
-      <div class="grid-telemetry-bar d-flex flex-wrap justify-content-between align-items-center mb-4 p-3 rounded" style="background: rgba(8, 12, 18, 0.95); border: 1px solid var(--cyber-border-bright); box-shadow: 0 0 15px rgba(0, 255, 102, 0.08);">
-        <div class="d-flex align-items-center gap-2 my-1">
-          <span class="badge bg-secondary font-monospace"><i class="fas fa-network-wired me-1"></i> ACTIVE NODES</span>
-          <strong class="text-cyan font-monospace h5 mb-0" x-text="getActiveNodesCount()"></strong>
-        </div>
-        <div class="d-flex align-items-center gap-2 my-1">
-          <span class="badge bg-success text-dark font-monospace"><i class="fas fa-shield-alt me-1"></i> BREACHED (YOU)</span>
-          <strong class="text-success font-monospace h5 mb-0" x-text="getBreachedCount()"></strong>
-        </div>
-        <div class="d-flex align-items-center gap-2 my-1">
-          <span class="badge bg-danger text-light font-monospace"><i class="fas fa-radiation me-1"></i> HOSTILE</span>
-          <strong class="text-danger font-monospace h5 mb-0" x-text="getHostileCount()"></strong>
-        </div>
-      </div>
 
       <div class="row">
         <template x-for="c in filteredListChallenges()" :key="c.id">
