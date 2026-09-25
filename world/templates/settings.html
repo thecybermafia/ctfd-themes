@@ -303,9 +303,9 @@
                   </div>
                 </div>
 
-                <div class="alert alert-info small font-monospace mb-4">
-                  Earn <strong>+<span x-text="data.points_per_ref"></span> PTS</strong> per recruit who proves capability by scoring &ge; <span x-text="data.min_points_to_qualify"></span> points.
-                </div>
+                <template x-if="data.show_bonus_notice">
+                  <div class="alert alert-info small font-monospace mb-4" x-text="data.bonus_notice_text"></div>
+                </template>
 
                 <div class="row g-2 mb-4 text-center">
                   <div class="col-4">
@@ -338,7 +338,9 @@
                       <tr>
                         <th>Operative</th>
                         <th>Joined</th>
-                        <th>Progress</th>
+                        <template x-if="data.show_progress_in_roster">
+                          <th>Progress</th>
+                        </template>
                         <th>Status</th>
                         <th class="text-end">Bonus</th>
                       </tr>
@@ -353,9 +355,11 @@
                             </template>
                           </td>
                           <td class="text-muted small" x-text="r.created_at"></td>
-                          <td>
-                            <span class="small font-monospace" x-text="r.live_score + '/' + data.min_points_to_qualify + ' PTS'"></span>
-                          </td>
+                          <template x-if="data.show_progress_in_roster">
+                            <td>
+                              <span class="small font-monospace" x-text="r.live_score + '/' + data.min_points_to_qualify + ' PTS'"></span>
+                            </td>
+                          </template>
                           <td>
                             <template x-if="r.status === 'qualified'">
                               <span class="badge bg-success">Qualified</span>
