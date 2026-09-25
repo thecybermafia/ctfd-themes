@@ -114,6 +114,10 @@
                       <input class="form-check-input" type="checkbox" id="filter-hostile-toggle" {% if theme_configs.filter_hostile_enabled %}checked{% endif %}>
                       <label class="form-check-label fw-bold" for="filter-hostile-toggle">Show "HOSTILE" Button</label>
                     </div>
+                    <div class="form-check form-switch mb-2">
+                      <input class="form-check-input" type="checkbox" id="filter-counts-toggle" {% if theme_configs.filter_counts_enabled %}checked{% endif %}>
+                      <label class="form-check-label fw-bold" for="filter-counts-toggle">Show Challenge Counts on Buttons ("ALL (X)", "YOU (Y)", "HOSTILE (Z)")</label>
+                    </div>
                   </div>
                   <div class="col-md-6">
                     <div class="form-check form-switch mb-2">
@@ -548,6 +552,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const filterAll = document.getElementById("filter-all-nodes-toggle").checked;
     const filterBreached = document.getElementById("filter-breached-toggle").checked;
     const filterHostile = document.getElementById("filter-hostile-toggle").checked;
+    const filterCounts = document.getElementById("filter-counts-toggle").checked;
     const sectorFilter = document.getElementById("sector-filter-toggle").checked;
     const guideBtn = document.getElementById("guide-btn-toggle").checked;
     const viewToggle = document.getElementById("view-toggle-btn-toggle").checked;
@@ -572,6 +577,7 @@ document.addEventListener("DOMContentLoaded", function() {
         filter_all_nodes_enabled: filterAll,
         filter_breached_enabled: filterBreached,
         filter_hostile_enabled: filterHostile,
+        filter_counts_enabled: filterCounts,
         sector_filter_enabled: sectorFilter,
         guide_enabled: guideBtn,
         view_toggle_enabled: viewToggle

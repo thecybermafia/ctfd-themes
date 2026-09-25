@@ -37,7 +37,7 @@
             @click="setFilter('all')"
           >
             <span>ALL NODES</span>
-            <span class="hud-filter-count font-monospace ms-1 text-cyan" x-show="getActiveNodesCount() > 0" x-text="'(' + getActiveNodesCount() + ')'"></span>
+            <span class="hud-filter-count font-monospace ms-1 text-cyan" x-show="filterCountsEnabled && getActiveNodesCount() > 0" x-text="'(' + getActiveNodesCount() + ')'"></span>
           </button>
           <button 
             type="button" 
@@ -47,7 +47,7 @@
             @click="setFilter('mine')"
           >
             <span>BREACHED (YOU)</span>
-            <span class="hud-filter-count font-monospace ms-1 text-success" x-show="getBreachedCount() > 0" x-text="'(' + getBreachedCount() + ')'"></span>
+            <span class="hud-filter-count font-monospace ms-1 text-success" x-show="filterCountsEnabled && getBreachedCount() > 0" x-text="'(' + getBreachedCount() + ')'"></span>
           </button>
           <button 
             type="button" 
@@ -57,7 +57,7 @@
             @click="setFilter('others')"
           >
             <span>HOSTILE</span>
-            <span class="hud-filter-count font-monospace ms-1 text-danger" x-show="getHostileCount() > 0" x-text="'(' + getHostileCount() + ')'"></span>
+            <span class="hud-filter-count font-monospace ms-1 text-danger" x-show="filterCountsEnabled && getHostileCount() > 0" x-text="'(' + getHostileCount() + ')'"></span>
           </button>
         </div>
       </div>

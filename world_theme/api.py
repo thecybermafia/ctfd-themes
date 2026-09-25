@@ -459,6 +459,7 @@ def admin_theme_settings():
         "filter_all_nodes_enabled": get_bool_config("world_filter_all_nodes_enabled", True),
         "filter_breached_enabled": get_bool_config("world_filter_breached_enabled", True),
         "filter_hostile_enabled": get_bool_config("world_filter_hostile_enabled", True),
+        "filter_counts_enabled": get_bool_config("world_filter_counts_enabled", True),
         "sector_filter_enabled": get_bool_config("world_sector_filter_enabled", True),
         "guide_enabled": get_bool_config("world_guide_enabled", True),
         "view_toggle_enabled": get_bool_config("world_view_toggle_enabled", True),
@@ -509,6 +510,7 @@ def world_settings_api():
                 "filter_all_nodes_enabled": get_bool_config("world_filter_all_nodes_enabled", True),
                 "filter_breached_enabled": get_bool_config("world_filter_breached_enabled", True),
                 "filter_hostile_enabled": get_bool_config("world_filter_hostile_enabled", True),
+                "filter_counts_enabled": get_bool_config("world_filter_counts_enabled", True),
                 "sector_filter_enabled": get_bool_config("world_sector_filter_enabled", True),
                 "guide_enabled": get_bool_config("world_guide_enabled", True),
                 "view_toggle_enabled": get_bool_config("world_view_toggle_enabled", True),
@@ -568,6 +570,8 @@ def world_settings_api():
         set_config("world_filter_breached_enabled", "true" if data.get("filter_breached_enabled") in (True, "true", "on", 1) else "false")
     if "filter_hostile_enabled" in data:
         set_config("world_filter_hostile_enabled", "true" if data.get("filter_hostile_enabled") in (True, "true", "on", 1) else "false")
+    if "filter_counts_enabled" in data:
+        set_config("world_filter_counts_enabled", "true" if data.get("filter_counts_enabled") in (True, "true", "on", 1) else "false")
     if "sector_filter_enabled" in data:
         set_config("world_sector_filter_enabled", "true" if data.get("sector_filter_enabled") in (True, "true", "on", 1) else "false")
     if "guide_enabled" in data:

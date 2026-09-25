@@ -25,6 +25,13 @@
               role="tab"
           >{% trans %}Access Tokens{% endtrans %}
           </button>
+          {% if Configs.referral_enabled != 'false' and Configs.referral_show_in_navbar != 'true' %}
+          <button
+              class="nav-link" id="settings-referrals-tab" data-bs-toggle="pill" data-bs-target="#referrals"
+              role="tab"
+          >{% trans %}Referrals{% endtrans %}
+          </button>
+          {% endif %}
         </div>
       </div>
 
@@ -255,6 +262,135 @@
             {% endif %}
 
           </div>
+
+          {% if Configs.referral_enabled != 'false' and Configs.referral_show_in_navbar != 'true' %}
+          <div class="tab-pane fade" id="referrals" role="tabpanel" x-data="ReferralsSettings" x-init="loadReferrals()">
+            <template x-if="loading">
+              <div class="text-center py-5">
+                <i class="fas fa-circle-notch fa-spin fa-2x text-primary mb-2"></i>
+                <div class="text-muted font-monospace small">Loading referral information...</div>
+              </div>
+            </template>
+
+            <template x-if="!loading && data">
+              <div>
+                <template x-if="data.is_disabled">
+                  <div class="alert alert-warning font-monospace mb-4">
+                    <strong>Referral Privileges Suspended:</strong> Your account or team has been excluded from the referral program.
+                  </div>
+                </template>
+
+                <h4 class="mb-3" x-text="data.program_name || 'Referral Program'"></h4>
+                <p class="text-muted small mb-4" x-text="data.instructions || 'Share your unique recruitment link with other operatives to earn bonus points.'"></p>
+
+                <div class="mb-3">
+                  <b><label class="form-label font-monospace">Personal Referral Code</label></b>
+                  <div class="input-group mb-3">
+                    <input type="text" class="form-control font-monospace fw-bold fs-5 text-center" :value="data.code" readonly>
+                    <button class="btn btn-outline-secondary px-3" type="button" @click="copy(data.code, $event)">
+                      <i class="fas fa-clipboard"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <b><label class="form-label font-monospace">Direct Referral Link</label></b>
+                  <div class="input-group mb-3">
+                    <input type="text" class="form-control font-monospace" :value="data.url" readonly>
+                    <button class="btn btn-outline-secondary px-3" type="button" @click="copy(data.url, $event)">
+                      <i class="fas fa-clipboard"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="alert alert-info small font-monospace mb-4">
+                  Earn <strong>+<span x-text="data.points_per_ref"></span> PTS</strong> per recruit who proves capability by scoring &ge; <span x-text="data.min_points_to_qualify"></span> points.
+                </div>
+
+                <div class="row g-2 mb-4 text-center">
+                  <div class="col-4">
+                    <div class="p-2 border rounded">
+                      <div class="fs-4 fw-bold font-monospace text-primary" x-text="data.total_recruits">0</div>
+                      <div class="small text-muted font-monospace">Enlisted</div>
+                    </div>
+                  </div>
+                  <div class="col-4">
+                    <div class="p-2 border rounded">
+                      <div class="fs-4 fw-bold font-monospace text-warning" x-text="data.pending_count">0</div>
+                      <div class="small text-muted font-monospace">In Training</div>
+                    </div>
+                  </div>
+                  <div class="col-4">
+                    <div class="p-2 border rounded">
+                      <div class="fs-4 fw-bold font-monospace text-success" x-text="data.qualified_count">0</div>
+                      <div class="small text-muted font-monospace">Qualified</div>
+                    </div>
+                  </div>
+                </div>
+
+                <hr>
+
+                <h4 class="text-center mt-3 mb-3">Recruited Operatives</h4>
+
+                <template x-if="data.recruits && data.recruits.length > 0">
+                  <table class="table table-striped align-middle">
+                    <thead>
+                      <tr>
+                        <th>Operative</th>
+                        <th>Joined</th>
+                        <th>Progress</th>
+                        <th>Status</th>
+                        <th class="text-end">Bonus</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <template x-for="r in data.recruits" :key="r.id">
+                        <tr>
+                          <td>
+                            <strong x-text="r.referee_name"></strong>
+                            <template x-if="r.team_name">
+                              <span class="badge bg-secondary ms-1" x-text="r.team_name"></span>
+                            </template>
+                          </td>
+                          <td class="text-muted small" x-text="r.created_at"></td>
+                          <td>
+                            <span class="small font-monospace" x-text="r.live_score + '/' + data.min_points_to_qualify + ' PTS'"></span>
+                          </td>
+                          <td>
+                            <template x-if="r.status === 'qualified'">
+                              <span class="badge bg-success">Qualified</span>
+                            </template>
+                            <template x-if="r.status === 'pending'">
+                              <span class="badge bg-warning text-dark">In Training</span>
+                            </template>
+                            <template x-if="r.status === 'flagged'">
+                              <span class="badge bg-danger">Review</span>
+                            </template>
+                            <template x-if="r.status === 'revoked'">
+                              <span class="badge bg-secondary">Revoked</span>
+                            </template>
+                            <template x-if="r.status === 'cap_reached'">
+                              <span class="badge bg-secondary">Cap Reached</span>
+                            </template>
+                          </td>
+                          <td class="text-end fw-bold font-monospace">
+                            <span class="text-success" x-text="r.bonus > 0 ? '+' + r.bonus + ' PTS' : '0 PTS'"></span>
+                          </td>
+                        </tr>
+                      </template>
+                    </tbody>
+                  </table>
+                </template>
+
+                <template x-if="!data.recruits || data.recruits.length === 0">
+                  <div class="p-4 text-center text-muted font-monospace small">
+                    No operatives recruited yet. Share your link above to begin earning points!
+                  </div>
+                </template>
+              </div>
+            </template>
+          </div>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -263,4 +399,40 @@
 
 {% block scripts %}
   {{ Assets.js("assets/js/settings.js") }}
+  <script>
+    document.addEventListener("alpine:init", () => {
+      Alpine.data("ReferralsSettings", () => ({
+        loading: true,
+        data: null,
+        async loadReferrals() {
+          try {
+            const resp = await fetch("/api/v1/referrals/me", {
+              headers: { "Accept": "application/json" }
+            });
+            if (resp.ok) {
+              const json = await resp.json();
+              if (json.success) {
+                this.data = json.data;
+              }
+            }
+          } catch (e) {
+            console.error("Failed to load referrals:", e);
+          } finally {
+            this.loading = false;
+          }
+        },
+        copy(text, event) {
+          if (!text) return;
+          navigator.clipboard.writeText(text).then(() => {
+            const btn = event.currentTarget;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check text-success"></i>';
+            setTimeout(() => {
+              btn.innerHTML = originalHTML;
+            }, 2000);
+          });
+        }
+      }));
+    });
+  </script>
 {% endblock %}

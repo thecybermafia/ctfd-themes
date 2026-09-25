@@ -54,6 +54,7 @@ window.WorldGameboard = function() {
     filterAllNodesEnabled: true,
     filterBreachedEnabled: true,
     filterHostileEnabled: true,
+    filterCountsEnabled: true,
     sectorFilterEnabled: true,
     guideEnabled: true,
     viewToggleEnabled: true,
@@ -95,6 +96,7 @@ window.WorldGameboard = function() {
             this.filterAllNodesEnabled = (s.filter_all_nodes_enabled !== false);
             this.filterBreachedEnabled = (s.filter_breached_enabled !== false);
             this.filterHostileEnabled = (s.filter_hostile_enabled !== false);
+            this.filterCountsEnabled = (s.filter_counts_enabled !== false);
             this.sectorFilterEnabled = (s.sector_filter_enabled !== false);
             this.guideEnabled = (s.guide_enabled !== false);
             this.viewToggleEnabled = (s.view_toggle_enabled !== false);
