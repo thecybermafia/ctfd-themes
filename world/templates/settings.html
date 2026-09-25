@@ -351,7 +351,7 @@
                           <td>
                             <strong x-text="r.referee_name"></strong>
                             <template x-if="r.team_name">
-                              <span class="badge bg-secondary ms-1" x-text="r.team_name"></span>
+                              <span class="badge bg-secondary text-white ms-1" x-text="r.team_name"></span>
                             </template>
                           </td>
                           <td class="text-muted small" x-text="r.created_at"></td>
@@ -362,19 +362,19 @@
                           </template>
                           <td>
                             <template x-if="r.status === 'qualified'">
-                              <span class="badge bg-success">Qualified</span>
+                              <span class="badge bg-success text-white">Qualified</span>
                             </template>
                             <template x-if="r.status === 'pending'">
-                              <span class="badge bg-warning text-dark">In Training</span>
+                              <span class="badge bg-warning text-dark fw-bold">In Training</span>
                             </template>
                             <template x-if="r.status === 'flagged'">
-                              <span class="badge bg-danger">Review</span>
+                              <span class="badge bg-danger text-white">Review</span>
                             </template>
                             <template x-if="r.status === 'revoked'">
-                              <span class="badge bg-secondary">Revoked</span>
+                              <span class="badge bg-secondary text-white">Revoked</span>
                             </template>
                             <template x-if="r.status === 'cap_reached'">
-                              <span class="badge bg-secondary">Cap Reached</span>
+                              <span class="badge bg-secondary text-white">Cap Reached</span>
                             </template>
                           </td>
                           <td class="text-end fw-bold font-monospace">
