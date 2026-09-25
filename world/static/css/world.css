@@ -1412,7 +1412,7 @@ blockquote.blockquote small.text-muted {
   width: 360px;
   max-width: calc(100vw - 48px);
   max-height: 420px;
-  background: rgba(6, 14, 10, 0.82);
+  background: rgba(6, 14, 10, 0.88);
   border: 1px solid var(--matrix-border-bright);
   border-radius: 10px;
   box-shadow: 0 12px 35px rgba(0, 0, 0, 0.75), 0 0 15px rgba(0, 230, 118, 0.15);
@@ -1425,12 +1425,6 @@ blockquote.blockquote small.text-muted {
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-[data-bs-theme="light"] .cyber-livefeed-drawer {
-  background: rgba(255, 255, 255, 0.85);
-  border-color: var(--matrix-border-bright);
-  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15), 0 0 15px rgba(5, 150, 105, 0.1);
-}
-
 .cyber-livefeed-drawer.minimized {
   max-height: 44px !important;
   width: 290px;
@@ -1439,11 +1433,7 @@ blockquote.blockquote small.text-muted {
 .livefeed-header {
   background: var(--matrix-bg-surface);
   border-bottom: 1px solid var(--matrix-border);
-  padding: 8px 12px;
-}
-
-[data-bs-theme="light"] .livefeed-header {
-  background: rgba(241, 245, 249, 0.95);
+  padding: 8px 14px;
 }
 
 .hud-stream-title {
@@ -1456,6 +1446,15 @@ blockquote.blockquote small.text-muted {
   letter-spacing: 0.8px;
 }
 
+.cyber-livefeed-drawer .livefeed-close-btn {
+  filter: invert(1) grayscale(100%) brightness(200%);
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+}
+.cyber-livefeed-drawer .livefeed-close-btn:hover {
+  opacity: 1;
+}
+
 .livefeed-body {
   flex: 1;
   max-height: 340px;
@@ -1463,40 +1462,76 @@ blockquote.blockquote small.text-muted {
   padding: 10px;
 }
 
+.livefeed-body::-webkit-scrollbar {
+  width: 5px;
+}
+.livefeed-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.livefeed-body::-webkit-scrollbar-thumb {
+  background: var(--matrix-border);
+  border-radius: 3px;
+}
+
+/* --- Dark Mode Card Styles (Default) --- */
 .cyber-feed-card {
-  background: rgba(10, 22, 14, 0.7);
+  background: rgba(10, 22, 14, 0.75);
   border: 1px solid rgba(0, 230, 118, 0.2);
   border-left: 3px solid var(--matrix-green);
-  border-radius: 4px;
+  border-radius: 6px;
   transition: all 0.2s ease;
 }
 
 .cyber-feed-card:hover {
   border-color: var(--matrix-green);
   box-shadow: 0 4px 15px rgba(0, 230, 118, 0.15);
-  background: rgba(10, 22, 14, 0.9);
+  background: rgba(10, 22, 14, 0.95);
 }
 
 .cyber-feed-card.feed-first-blood {
   border-left: 3px solid #ffd700;
-  background: rgba(25, 20, 5, 0.7);
+  border-color: rgba(255, 215, 0, 0.35);
+  background: rgba(25, 20, 5, 0.75);
 }
 
 .cyber-feed-card.feed-first-blood:hover {
   border-color: #ffd700;
   box-shadow: 0 4px 15px rgba(255, 215, 0, 0.2);
+  background: rgba(30, 24, 6, 0.92);
+}
+
+.feed-country-badge {
+  color: #f1f5f9;
+}
+.feed-crosshair-icon {
+  color: var(--matrix-green);
+}
+.cyber-feed-card.feed-first-blood .feed-crosshair-icon {
+  color: #ffd700;
 }
 
 .cyber-feed-pts {
   color: var(--matrix-green-bright);
   font-size: 0.82rem;
-  text-shadow: 0 0 6px rgba(0, 230, 118, 0.5);
+  text-shadow: 0 0 6px rgba(0, 230, 118, 0.4);
+}
+.cyber-feed-card.feed-first-blood .cyber-feed-pts {
+  color: #ffd700;
+  text-shadow: 0 0 6px rgba(255, 215, 0, 0.4);
 }
 
 .cyber-chal-tag {
   font-size: 0.72rem;
-  color: var(--matrix-text-dim);
-  max-width: 180px;
+  color: var(--matrix-text-muted);
+  max-width: 175px;
+}
+.feed-challenge-link {
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.feed-challenge-link:hover {
+  color: var(--matrix-green-bright);
+  text-decoration: underline;
 }
 
 .cyber-badge-firstblood {
@@ -1516,6 +1551,171 @@ blockquote.blockquote small.text-muted {
   font-size: 0.65rem !important;
   padding: 0.2rem 0.5rem !important;
   letter-spacing: 0.8px;
+}
+
+.cyber-badge-activation {
+  background-color: rgba(0, 230, 118, 0.15) !important;
+  color: #00e676 !important;
+  border: 1px solid rgba(0, 230, 118, 0.45) !important;
+  font-size: 0.65rem !important;
+  padding: 0.2rem 0.5rem !important;
+  letter-spacing: 0.8px;
+}
+
+.cyber-feed-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.feed-user-icon {
+  color: var(--matrix-green);
+}
+.feed-team-link {
+  color: #cbd5e1;
+  transition: color 0.15s ease;
+}
+.feed-team-link:hover {
+  color: var(--matrix-green-bright);
+}
+.feed-time-text {
+  color: #64748b;
+}
+
+/* --- Clean Modern Light Mode Overrides for Live Feed --- */
+[data-bs-theme="light"] .cyber-livefeed-drawer {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 0 1px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-bs-theme="light"] .livefeed-header {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-bs-theme="light"] .hud-stream-title {
+  color: #059669 !important;
+  font-weight: 700 !important;
+}
+
+[data-bs-theme="light"] .hud-stream-subtitle {
+  color: #64748b !important;
+}
+
+[data-bs-theme="light"] .cyber-livefeed-drawer .livefeed-close-btn {
+  filter: none !important;
+  opacity: 0.5;
+}
+[data-bs-theme="light"] .cyber-livefeed-drawer .livefeed-close-btn:hover {
+  opacity: 0.9;
+}
+
+[data-bs-theme="light"] .livefeed-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+[data-bs-theme="light"] .cyber-feed-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-left: 3px solid #10b981 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-bs-theme="light"] .cyber-feed-card:hover {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  border-left-color: #059669 !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12) !important;
+}
+
+[data-bs-theme="light"] .cyber-feed-card.feed-first-blood {
+  background: #fffbeb !important;
+  border: 1px solid #fde68a !important;
+  border-left: 3px solid #d97706 !important;
+  box-shadow: 0 1px 3px rgba(217, 119, 6, 0.06) !important;
+}
+
+[data-bs-theme="light"] .cyber-feed-card.feed-first-blood:hover {
+  background: #fef3c7 !important;
+  border-color: #fcd34d !important;
+  border-left-color: #b45309 !important;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.14) !important;
+}
+
+[data-bs-theme="light"] .feed-country-badge {
+  color: #0f172a !important;
+}
+
+[data-bs-theme="light"] .feed-crosshair-icon {
+  color: #059669 !important;
+}
+
+[data-bs-theme="light"] .cyber-feed-card.feed-first-blood .feed-crosshair-icon {
+  color: #d97706 !important;
+}
+
+[data-bs-theme="light"] .cyber-feed-pts {
+  color: #059669 !important;
+  text-shadow: none !important;
+}
+
+[data-bs-theme="light"] .cyber-feed-card.feed-first-blood .cyber-feed-pts {
+  color: #d97706 !important;
+  text-shadow: none !important;
+}
+
+[data-bs-theme="light"] .cyber-chal-tag {
+  color: #475569 !important;
+}
+
+[data-bs-theme="light"] .feed-challenge-link:hover {
+  color: #059669 !important;
+  text-decoration: underline !important;
+}
+
+[data-bs-theme="light"] .cyber-badge-breach {
+  background-color: #e0f2fe !important;
+  color: #0284c7 !important;
+  border: 1px solid #bae6fd !important;
+  box-shadow: none !important;
+  font-weight: 600 !important;
+}
+
+[data-bs-theme="light"] .cyber-badge-firstblood {
+  background-color: #fef3c7 !important;
+  color: #b45309 !important;
+  border: 1px solid #fde68a !important;
+  box-shadow: none !important;
+  font-weight: 600 !important;
+}
+
+[data-bs-theme="light"] .cyber-badge-activation {
+  background-color: #dcfce7 !important;
+  color: #15803d !important;
+  border: 1px solid #bbf7d0 !important;
+  box-shadow: none !important;
+  font-weight: 600 !important;
+}
+
+[data-bs-theme="light"] .cyber-feed-footer {
+  border-top: 1px solid #f1f5f9 !important;
+}
+
+[data-bs-theme="light"] .feed-user-icon {
+  color: #059669 !important;
+}
+
+[data-bs-theme="light"] .feed-team-link {
+  color: #1e293b !important;
+  font-weight: 600 !important;
+}
+
+[data-bs-theme="light"] .feed-team-link:hover {
+  color: #059669 !important;
+  text-decoration: underline !important;
+}
+
+[data-bs-theme="light"] .feed-time-text {
+  color: #64748b !important;
 }
 
 .pulse-dot {

@@ -115,7 +115,7 @@
           <button type="button" class="btn btn-sm btn-link text-muted p-0 me-2" @click="toggleMinimizeLiveFeed()" title="Toggle Minimize">
             <i class="fas" :class="liveFeedMinimized ? 'fa-window-maximize' : 'fa-minus'"></i>
           </button>
-          <button type="button" class="btn-close btn-close-white btn-sm" @click="closeLiveFeed()" aria-label="Close"></button>
+          <button type="button" class="btn-close livefeed-close-btn btn-sm" @click="closeLiveFeed()" aria-label="Close"></button>
         </div>
       </div>
 
@@ -133,13 +133,13 @@
               <!-- Top Row: Country / Target & Points -->
               <div class="d-flex justify-content-between align-items-center mb-1">
                 <div 
-                  class="d-flex align-items-center gap-1 font-display small text-light feed-country-badge"
+                  class="d-flex align-items-center gap-1 font-display small feed-country-badge"
                   :style="event.challenge_id ? 'cursor: pointer;' : ''"
                   @click="engageFromFeed(event)"
                   :title="event.challenge_id ? ('Engage ' + (event.country_name || 'Node')) : ''"
                 >
-                  <i class="fas fa-crosshairs text-success me-1" style="font-size: 0.75rem;"></i>
-                  <span class="fw-bold" x-text="event.country_name ? (event.country_name + ' [' + event.country_iso + ']') : 'SECTOR'"></span>
+                  <i class="fas fa-crosshairs me-1 feed-crosshair-icon" style="font-size: 0.75rem;"></i>
+                  <span class="fw-bold feed-country-text" x-text="event.country_name ? (event.country_name + ' [' + event.country_iso + ']') : 'SECTOR'"></span>
                 </div>
                 <span class="cyber-feed-pts font-monospace fw-bold" x-text="'+' + event.points + ' PTS'"></span>
               </div>
@@ -165,23 +165,23 @@
 
               <!-- Bottom Row: Operative & Timestamp -->
               <div class="d-flex justify-content-between align-items-center mt-2 pt-1 cyber-feed-footer font-monospace">
-                <span class="text-success">
-                  <i class="fas fa-user-secret me-1"></i>
+                <span class="feed-user-section">
+                  <i class="fas fa-user-secret me-1 feed-user-icon"></i>
                   <template x-if="event.account_url">
                     <a 
                       :href="event.account_url" 
                       target="_blank" 
                       rel="noopener noreferrer" 
-                      class="text-light text-decoration-none feed-team-link"
+                      class="text-decoration-none feed-team-link"
                       :title="'View operative profile in new tab'"
                       x-text="event.user_name || event.solver_name"
                     ></a>
                   </template>
                   <template x-if="!event.account_url">
-                    <span class="text-light" x-text="event.user_name || event.solver_name"></span>
+                    <span class="feed-team-link" x-text="event.user_name || event.solver_name"></span>
                   </template>
                 </span>
-                <span class="text-muted small" x-text="formatFeedTime(event.date)"></span>
+                <span class="feed-time-text small" x-text="formatFeedTime(event.date)"></span>
               </div>
             </div>
           </template>
