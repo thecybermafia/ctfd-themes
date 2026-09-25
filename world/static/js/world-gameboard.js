@@ -67,8 +67,6 @@ window.WorldGameboard = function() {
     lastMouseY: 0,
 
     async init() {
-      console.log("[MatrixGrid] WorldGameboard initializing telemetry...");
-
       // 1. Initialize live feed state from localStorage
       try {
         const savedFeed = localStorage.getItem("world_livefeed_open");
@@ -412,8 +410,6 @@ window.WorldGameboard = function() {
         reticle.classList.add("locking");
       }
 
-      console.log(`[MatrixGrid] Engaging ${c.name} [${c.iso}] at SVG coords (${targetX}, ${targetY})`);
-
       // If zoom animation is enabled, zoom camera directly onto the target
       if (this.zoomAnimationEnabled) {
         this.zoomTo(targetX, targetY, 2.6);
@@ -654,7 +650,6 @@ window.WorldGameboard = function() {
 
     loadChallenge(challengeId) {
       const id = parseInt(challengeId, 10);
-      console.log("[MatrixGrid] Engaging challenge ID:", id);
 
       // Trigger CTFd native ChallengeBoard modal cleanly
       window.dispatchEvent(new CustomEvent("load-challenge", { detail: id }));
@@ -662,7 +657,6 @@ window.WorldGameboard = function() {
 
     engageFromFeed(event) {
       if (!event || !event.challenge_id) return;
-      console.log("[LiveFeed] Engaging challenge from feed:", event.challenge_name, "id:", event.challenge_id);
       if (event.country_iso && this.countriesData[event.country_iso]) {
         this.engageCountry(this.countriesData[event.country_iso]);
       } else {
