@@ -22,27 +22,27 @@
       <ul class="nav nav-tabs mb-4" id="themeSettingsTabs" role="tablist">
         <li class="nav-item">
           <a class="nav-link active" id="display-tab" data-bs-toggle="tab" data-toggle="tab" href="#display" role="tab">
-            <i class="fas fa-desktop me-1"></i> Display &amp; Visuals
+            Display &amp; Visuals
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link" id="modules-tab" data-bs-toggle="tab" data-toggle="tab" href="#modules" role="tab">
-            <i class="fas fa-satellite-dish me-1"></i> Interactive Modules
+            Interactive Modules
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link" id="homepage-tab" data-bs-toggle="tab" data-toggle="tab" href="#homepage" role="tab">
-            <i class="fas fa-terminal me-1"></i> Homepage Matrix
+            Homepage Matrix
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link" id="countdown-tab" data-bs-toggle="tab" data-toggle="tab" href="#countdown" role="tab">
-            <i class="fas fa-stopwatch me-1"></i> Countdown Page
+            Countdown Page
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link" id="territories-tab" data-bs-toggle="tab" data-toggle="tab" href="#territories" role="tab">
-            <i class="fas fa-globe me-1"></i> Country Assignments
+            Country Assignments
           </a>
         </li>
       </ul>
@@ -136,7 +136,7 @@
                 </div>
 
                 <button type="button" class="btn btn-success" id="save-display-btn">
-                  <i class="fas fa-save me-1"></i> Save Display Settings
+                  Save Display Settings
                 </button>
                 <span id="display-status" class="ms-2 fw-bold"></span>
               </form>
@@ -204,7 +204,7 @@
 
                 <div class="mb-4 ps-4">
                   <button type="button" class="btn btn-outline-secondary btn-sm" id="reset-tutorial-btn">
-                    <i class="fas fa-redo me-1"></i> Reset Tour for All Players (Force Retake)
+                    Reset Tour for All Players (Force Retake)
                   </button>
                   <div class="form-text text-muted">Clears the client tour completion flag so all operatives receive the briefing again.</div>
                 </div>
@@ -212,7 +212,7 @@
                 <hr>
 
                 <button type="button" class="btn btn-success" id="save-modules-btn">
-                  <i class="fas fa-save me-1"></i> Save Module Settings
+                  Save Module Settings
                 </button>
                 <span id="modules-status" class="ms-2 fw-bold"></span>
               </form>
@@ -226,7 +226,7 @@
             <div class="card-header d-flex justify-content-between align-items-center">
               <h5 class="mb-0">Homepage Matrix Terminal Configuration (/)</h5>
               <a href="/" target="_blank" class="btn btn-outline-primary btn-sm">
-                <i class="fas fa-external-link-alt me-1"></i> View Homepage &rarr;
+                View Homepage
               </a>
             </div>
             <div class="card-body">
@@ -265,7 +265,6 @@
                   <textarea class="form-control font-monospace" id="matrix-home-content-input" rows="20" style="resize: vertical; font-size: 0.88rem; line-height: 1.5;">{% if theme_configs.matrix_home_content %}{{ theme_configs.matrix_home_content }}{% else %}<div class="matrix-terminal-card">
   <div class="matrix-terminal-header">
     <div>
-      <i class="fas fa-terminal me-2"></i>
       <span>TERMINAL // CTF-NET HOST CONNECTION [ACTIVE]</span>
     </div>
   </div>
@@ -284,16 +283,16 @@
 
     <div class="matrix-hero-actions" id="matrix-actions" style="display: none;">
       <a href="/challenges" class="matrix-btn-enter">
-        <i class="fas fa-crosshairs"></i> ENTER THE GRID
+        ENTER THE GRID
       </a>
       <a href="/scoreboard" class="matrix-btn-secondary">
-        <i class="fas fa-chart-line"></i> SCOREBOARD
+        SCOREBOARD
       </a>
       <a href="/login" class="matrix-btn-secondary matrix-auth-login">
-        <i class="fas fa-sign-in-alt"></i> LOGIN
+        LOGIN
       </a>
       <a href="/register" class="matrix-btn-secondary matrix-auth-register">
-        <i class="fas fa-user-plus"></i> REGISTER
+        REGISTER
       </a>
     </div>
 
@@ -308,7 +307,7 @@
                 </div>
 
                 <button type="button" class="btn btn-success" id="save-homepage-btn">
-                  <i class="fas fa-save me-1"></i> Save Homepage Settings
+                  Save Homepage Settings
                 </button>
                 <span id="homepage-status" class="ms-2 fw-bold"></span>
               </form>
@@ -322,7 +321,7 @@
             <div class="card-header d-flex justify-content-between align-items-center">
               <h5 class="mb-0">Countdown Clock (/countdown)</h5>
               <a href="/countdown" target="_blank" class="btn btn-outline-primary btn-sm">
-                <i class="fas fa-external-link-alt me-1"></i> View Countdown Page &rarr;
+                View Countdown Page
               </a>
             </div>
             <div class="card-body">
@@ -378,7 +377,6 @@
   <div class="col-md-10 col-lg-8">
     <div class="cyber-countdown-briefing-card text-start p-4">
       <div class="briefing-header d-flex align-items-center mb-3">
-        <i class="fas fa-terminal me-2 text-success"></i>
         <span class="font-display fw-bold text-success" style="font-size: 0.85rem; letter-spacing: 1.5px;">[ MISSION BRIEFING // RESTRICTED ACCESS ]</span>
       </div>
       <div class="briefing-content font-monospace text-light" style="font-size: 0.9rem; line-height: 1.7;">
@@ -392,10 +390,10 @@
 <!-- Action Buttons -->
 <div class="d-flex justify-content-center gap-3">
   <a href="/challenges" class="btn btn-outline-success font-monospace px-4 py-2">
-    <i class="fas fa-terminal me-2"></i> <span>CHALLENGE GRID</span>
+    <span>CHALLENGE GRID</span>
   </a>
   <a href="/" class="btn btn-outline-secondary font-monospace px-4 py-2">
-    <i class="fas fa-home me-2"></i> <span>HEADQUARTERS</span>
+    <span>HEADQUARTERS</span>
   </a>
 </div>{% endif %}</textarea>
                   <div class="form-text text-muted mt-2">
@@ -412,7 +410,7 @@
                 </div>
 
                 <button type="button" class="btn btn-success" id="save-countdown-btn">
-                  <i class="fas fa-save me-1"></i> Save Countdown Settings
+                  Save Countdown Settings
                 </button>
                 <span id="countdown-status" class="ms-2 fw-bold"></span>
               </form>
@@ -428,7 +426,6 @@
             </div>
             <div class="card-body">
               <div class="alert alert-info">
-                <i class="fas fa-info-circle me-1"></i>
                 <strong>Country Mapping</strong>: Assign each challenge to a nation on the World Map. Each country can only be mapped to one challenge.
                 <br>
                 <small class="text-muted">Note: Early-solver decaying bonus levels are configured <strong>per challenge</strong> on each challenge's detail page (<a href="{{ url_for('admin.challenges_listing') }}">Admin &rarr; Challenges</a> &rarr; Country &amp; Bonus tab).</small>
@@ -474,7 +471,7 @@
                       </td>
                       <td>
                         <button type="button" class="btn btn-sm btn-primary save-chal-btn" data-chal-id="{{ chal.id }}">
-                          <i class="fas fa-save me-1"></i> Save
+                          Save
                         </button>
                       </td>
                     </tr>
@@ -505,7 +502,7 @@ document.addEventListener("DOMContentLoaded", function() {
       const iso = document.getElementById("country-" + chalId).value;
 
       btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+      btn.textContent = "Saving...";
 
       fetch("/api/v1/world/challenges/" + chalId + "/country", {
         method: "POST",
@@ -522,21 +519,21 @@ document.addEventListener("DOMContentLoaded", function() {
         btn.disabled = false;
         if (res.success) {
           btn.className = "btn btn-sm btn-success save-chal-btn";
-          btn.innerHTML = '<i class="fas fa-check me-1"></i> Saved';
+          btn.textContent = "Saved";
           setTimeout(() => {
             btn.className = "btn btn-sm btn-primary save-chal-btn";
-            btn.innerHTML = '<i class="fas fa-save me-1"></i> Save';
+            btn.textContent = "Save";
           }, 2000);
         } else {
           alert(res.message || "Error saving country");
           btn.className = "btn btn-sm btn-danger save-chal-btn";
-          btn.innerHTML = '<i class="fas fa-times me-1"></i> Error';
+          btn.textContent = "Error";
         }
       })
       .catch(err => {
         btn.disabled = false;
         btn.className = "btn btn-sm btn-danger save-chal-btn";
-        btn.innerHTML = '<i class="fas fa-times me-1"></i> Error';
+        btn.textContent = "Error";
       });
     });
   });

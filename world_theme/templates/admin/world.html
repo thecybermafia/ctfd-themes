@@ -11,7 +11,6 @@
     <div class="row">
         <div class="col-md-12">
             <div class="alert alert-info" role="alert">
-                <i class="fas fa-info-circle"></i>
                 Assign each challenge to an individual country on the World Map gameboard.
                 <strong>1 country = 1 challenge</strong>. If a challenge has a <code>country:XX</code> tag and no override below, it will use the tag automatically.
             </div>
@@ -58,7 +57,7 @@
                             </td>
                             <td>
                                 <button class="btn btn-sm btn-primary save-btn" data-chal-id="{{ chal.id }}">
-                                    <i class="fas fa-save"></i> Save
+                                    Save
                                 </button>
                             </td>
                         </tr>
@@ -79,10 +78,10 @@ document.addEventListener("DOMContentLoaded", function() {
             var chalId = this.getAttribute("data-chal-id");
             var select = document.getElementById("select-" + chalId);
             var iso = select.value;
-            var originalText = btn.innerHTML;
+            var originalText = btn.textContent.trim();
 
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.textContent = "Saving...";
 
             var method = iso ? "POST" : "DELETE";
             var url = "/api/v1/world/challenges/" + chalId + "/country";
@@ -103,14 +102,14 @@ document.addEventListener("DOMContentLoaded", function() {
                     btn.disabled = false;
                     if (data.success) {
                         btn.className = "btn btn-sm btn-success";
-                        btn.innerHTML = '<i class="fas fa-check"></i> Saved';
+                        btn.textContent = "Saved";
                         setTimeout(function() {
                             btn.className = "btn btn-sm btn-primary";
-                            btn.innerHTML = originalText;
+                            btn.textContent = originalText;
                         }, 2000);
                     } else {
                         alert(data.message || "Failed to update country assignment");
-                        btn.innerHTML = originalText;
+                        btn.textContent = originalText;
                     }
                 })
                 .catch(function(err) {
