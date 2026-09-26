@@ -25,7 +25,7 @@
               role="tab"
           >{% trans %}Access Tokens{% endtrans %}
           </button>
-          {% if Configs.referral_enabled != 'false' and Configs.referral_show_in_navbar != 'true' %}
+          {% if is_referral_accessible_for_user is defined and is_referral_accessible_for_user() and Configs.referral_show_in_navbar != 'true' %}
           <button
               class="nav-link" id="settings-referrals-tab" data-bs-toggle="pill" data-bs-target="#referrals"
               role="tab"
@@ -263,7 +263,7 @@
 
           </div>
 
-          {% if Configs.referral_enabled != 'false' and Configs.referral_show_in_navbar != 'true' %}
+          {% if is_referral_accessible_for_user is defined and is_referral_accessible_for_user() and Configs.referral_show_in_navbar != 'true' %}
           <div class="tab-pane fade" id="referrals" role="tabpanel" x-data="ReferralsSettings" x-init="loadReferrals()">
             <template x-if="loading">
               <div class="text-center py-5">

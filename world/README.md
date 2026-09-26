@@ -1,56 +1,83 @@
-# core-beta
+# CTFd World Matrix Theme (Tactical Cyber Warfare Theme)
 
-Rewritten version of the CTFd core theme to use Bootstrap 5, Alpine.js, and vite to improve upon the existing CTFd theme structure.
+A tactical, map-centric cyber warfare theme for CTFd inspired by modern cyber-range operations and visual mission control interfaces. Built on Bootstrap 5, Alpine.js, and Leaflet.js with complete dark and light mode support.
 
-## Subtree Installation
+---
 
-### Add repo to themes folder
+## 🛰️ Core Features & Highlights
 
-```
-git subtree add --prefix CTFd/themes/core-beta git@github.com:CTFd/core-beta.git main --squash
-```
+### 1. Interactive Tactical Gameboard (`/challenges`)
+- **GeoJSON World Map**: Full interactive vector world map featuring 280+ countries with custom node pins, dynamic country borders, and responsive coordinate projection.
+- **Node Filtering Cluster**:
+  - **All Nodes**: View all active combat nodes across the globe.
+  - **Breached (You)**: Highlights nodes compromised by you or your team (green tactical beacons).
+  - **Hostile**: Highlights nodes claimed by competing teams (red hostile indicators).
+  - **Sector Select**: Dropdown filter to focus on specific challenge categories (e.g. Web, Crypto, Reverse, Pwn, OSINT).
+  - **Toggleable Challenge Counts**: Admin can configure whether numeric solve counts e.g. `(282)`, `(11)` appear next to node filter buttons.
+- **Multi-Modal Viewing**:
+  - **Map View**: Full-screen tactical world map with zoom controls, reset coordinate centering, and live sector beacons.
+  - **Grid View**: Instant toggle to an organized, categorical matrix grid view for fast challenge browsing.
+- **Integrated Custom Challenge Views**:
+  - Native modals for standard challenges, dynamic scoring challenges, photo/image verification challenges, interactive bingo boards, crossword puzzles, and textarea writeup reviews.
 
-### Pull latest changes to subtree
+### 2. Tactical Live Activity Feed Drawer
+- **Slide-Out Command Drawer**: One-click slide-out panel accessible via the HUD navbar (`LIVE FEED`).
+- **Telemetry Streaming**: Real-time polling showing solves, first blood announcements, team registrations, recruit qualifications, and system notifications.
+- **Adaptive Visual Theming**: Seamless dark and light mode styling with clean badge contrasts, smooth scroll telemetry, and zero backdrop bleeding.
 
-```
-git subtree pull --prefix CTFd/themes/core-beta git@github.com:CTFd/core-beta.git main --squash
-```
+### 3. Interactive Tactical Onboarding Guide
+- **5-Step Interactive Walkthrough**:
+  - *Step 1*: Strategic Concept & Objectives.
+  - *Step 2*: World Map Navigation & Controls (with automatic map camera pan & zoom demo).
+  - *Step 3*: Sector Classification & Filtering.
+  - *Step 4*: Infiltrating a Country Node & Flag Submission.
+  - *Step 5*: Live Intelligence Feed & Team Telemetry.
+- Remembers dismissal status in local browser state and can be reopened anytime via the `GUIDE` button in the HUD.
 
-### Subtree Gotcha
+### 4. Matrix Command Homepage
+- **Digital Rain Canvas**: Sleek canvas matrix rain animation matching the tactical cyber theme.
+- **Quick Deployment Actions**: Direct shortcuts to Challenges, Scoreboard, and Team Syndicate terminals.
 
-Make sure to use Merge Commits when dealing with the subtree here. For some reason Github's squash and commit uses the wrong line ending which causes issues with the subtree script: https://stackoverflow.com/a/47190256.
+### 5. Settings & Recruitment Hub (`/settings`)
+- Dedicated **Referrals** tab embedded directly within participant settings when hidden from the main navbar.
+- Displays personal recruitment directives, invite codes, 1-click clipboard copy buttons, and real-time recruited operatives rosters with progress bars.
 
-## Creating Custom Theme (based on core-beta)
+### 6. Admin Control Panel (`/admin/theme_settings`)
+Super-configurable administration panel:
+- **Challenge Count Display**: Enable or disable numeric counts next to All Nodes, Breached, and Hostile filter buttons.
+- **Sector Filtering**: Toggle sector dropdown on the gameboard HUD.
+- **Tactical Guide**: Enable or disable the interactive tutorial button.
+- **Live Feed Drawer**: Enable or disable the real-time activity feed slide-out.
+- **Matrix Rain Animation**: Enable or disable the canvas effect on the homepage.
+- **Node Visibility**: Individually toggle display of All Nodes, Breached, and Hostile filters.
 
-To create a custom theme based on the core-beta one, here are the steps to follow:
+---
 
-1. Clone core-beta theme locally to a seperate folder
+## 🚀 Installation
 
+1. Copy the `world/` folder into your CTFd themes directory:
+   ```bash
+   cp -r world /opt/CTFd/CTFd/themes/
    ```
-   git clone https://github.com/CTFd/core-beta.git custom-theme
-   ```
+2. In CTFd Admin Panel, navigate to **Config > Theme** and select **world**.
+3. Configure theme parameters under **Plugins > World Theme Settings** (`/admin/theme_settings`).
 
-   To clarify the structure of the project, the `./assets` folder contains the uncompiled source files (the ones you can modify), while the `./static` directory contains the compiled ones.
+---
 
-2. Install [Yarn](https://classic.yarnpkg.com/en/) following the [official installation guides](https://classic.yarnpkg.com/en/docs/install).
+## 🛠️ Development & Building
 
-   - **Yarn** is a dependency management tool used to install and manage project packages
-   - **[Vite](https://vite.dev/guide/)** handles the frontend tooling in CTFd by building optimized assets that are served through Flask.
+The theme source code is structured as follows:
+- `templates/`: Jinja2 template files (`base.html`, `challenges.html`, `settings.html`, etc.).
+- `assets/`: Uncompiled SCSS styles and ES6 JavaScript sources.
+- `static/`: Compiled distribution CSS and JS bundles.
 
-3. Run `yarn install` in the root of `custom-theme` folder to install the necessary Node packages including `vite`.
+To rebuild assets:
+```bash
+yarn install
+yarn build
+```
 
-4. Run the appropriate yarn build mode:
+---
 
-   - Run `yarn dev` (this will run `vite build --watch`) while developing the theme.
-   - Run `yarn build` (which will run `vite build`) for a one-time build.
-     Vite allows you to preview changes instantly with hot reloading.
-
-5. Now, you can start your modifications in the `assets` folder. Each time you save, Vite will automatically recompile everything (assuming you are using `yarn dev`), and you can directly see the result by importing your compiled theme into a CTFd instance.
-   Note: You do not need the `node_modules` folder, you can simply zip the theme directory without it.
-
-6. When you are ready you can use `yarn build` to build the production copy of your theme.
-
-## Todo
-
-- Document how we are using Vite
-- Create a cookie cutter template package to use with Vite
+## 📜 License
+Apache-2.0

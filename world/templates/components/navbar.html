@@ -23,11 +23,21 @@
     <div class="collapse navbar-collapse" id="base-navbars">
       <ul class="navbar-nav me-auto">
         {% for page in Plugins.user_menu_pages %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ page.route }}" {% if page.link_target %}target="{{ page.link_target }}"{% endif %}>
-              {{ page.title }}
-            </a>
-          </li>
+          {% if page.route == '/referrals' or page.title == 'Referrals' %}
+            {% if is_referral_accessible_for_user is defined and is_referral_accessible_for_user() %}
+              <li class="nav-item">
+                <a class="nav-link" href="{{ page.route }}" {% if page.link_target %}target="{{ page.link_target }}"{% endif %}>
+                  {{ page.title }}
+                </a>
+              </li>
+            {% endif %}
+          {% else %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ page.route }}" {% if page.link_target %}target="{{ page.link_target }}"{% endif %}>
+                {{ page.title }}
+              </a>
+            </li>
+          {% endif %}
         {% endfor %}
 
         {% if Configs.account_visibility != 'admins' %}
