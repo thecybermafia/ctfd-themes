@@ -155,6 +155,8 @@
         document.querySelectorAll(".tutorial-highlighted").forEach(el => el.classList.remove("tutorial-highlighted"));
         try {
             localStorage.setItem(TOUR_STORAGE_KEY, "true");
+            localStorage.setItem("world_user_guide_enabled", "false");
+            window.dispatchEvent(new CustomEvent("world:guide-completed"));
         } catch(e) {}
     }
 

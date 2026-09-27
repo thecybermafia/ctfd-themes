@@ -59,6 +59,12 @@ window.WorldGameboard = function() {
     guideEnabled: true,
     viewToggleEnabled: true,
 
+    // Target Finder (Quick Search) - Configurable via User Theme Settings
+    searchQuery: "",
+    searchResults: [],
+    searchDropdownOpen: false,
+    searchEnabled: false,
+
     // SVG Pan & Zoom State (ViewBox: 1008 x 651, Center: 504, 325.5)
     panX: 0,
     panY: 0,
@@ -100,6 +106,27 @@ window.WorldGameboard = function() {
             this.sectorFilterEnabled = (s.sector_filter_enabled !== false);
             this.guideEnabled = (s.guide_enabled !== false);
             this.viewToggleEnabled = (s.view_toggle_enabled !== false);
+
+            // User preferences from /settings or localStorage
+            const userSearch = localStorage.getItem("world_user_search_enabled");
+            this.searchEnabled = (userSearch !== null) ? (userSearch === "true") : false;
+
+            const userCounts = localStorage.getItem("world_user_counts_enabled");
+            if (userCounts !== null) {
+              this.filterCountsEnabled = (userCounts === "true");
+            }
+
+            const userGuide = localStorage.getItem("world_user_guide_enabled");
+            const tutorialCompleted = localStorage.getItem("world_theme_tutorial_completed_v1");
+            if (userGuide !== null) {
+              this.guideEnabled = (userGuide === "true");
+            } else if (tutorialCompleted === "true") {
+              this.guideEnabled = false;
+            }
+
+            window.addEventListener("world:guide-completed", () => {
+              this.guideEnabled = false;
+            });
 
             const wrapper = document.querySelector(".fb-gameboard-wrapper");
             if (wrapper) {
@@ -389,6 +416,9 @@ window.WorldGameboard = function() {
       }
 
       this.targetingActive = true;
+      if (window.WorldAudio) {
+        window.WorldAudio.playBlip();
+      }
 
       // Extract precision geometric centroid
       let targetX = (c.centroid && c.centroid.x) || (typeof CALIBRATED_CENTROIDS !== "undefined" && CALIBRATED_CENTROIDS[c.iso] ? CALIBRATED_CENTROIDS[c.iso][0] : 504);
@@ -553,6 +583,9 @@ window.WorldGameboard = function() {
     },
 
     resetZoom() {
+      if (window.WorldAudio) {
+        window.WorldAudio.playBlip();
+      }
       this.scale = 1.0;
       this.panX = 0;
       this.panY = 0;
@@ -568,6 +601,13 @@ window.WorldGameboard = function() {
           this.zoomOut();
         } else if (e.key === "0") {
           this.resetZoom();
+        } else if (e.key === "/" && this.searchEnabled) {
+          const searchInput = document.querySelector(".hud-search-input");
+          if (searchInput && document.activeElement !== searchInput) {
+            e.preventDefault();
+            searchInput.focus();
+            searchInput.select();
+          }
         }
       });
     },
@@ -646,8 +686,87 @@ window.WorldGameboard = function() {
         if (this.currentFilter === "mine" && !c.solved_by_me) return false;
         if (this.currentFilter === "others" && (c.solved_by_me || c.status !== "captured_by_opponent")) return false;
         if (this.selectedCategory && c.category !== this.selectedCategory) return false;
+        if (this.searchQuery && this.searchQuery.trim()) {
+          const q = this.searchQuery.toLowerCase().trim();
+          const matchName = c.name && c.name.toLowerCase().includes(q);
+          const matchCat = c.category && c.category.toLowerCase().includes(q);
+          const matchCountry = c.country_name && c.country_name.toLowerCase().includes(q);
+          const matchIso = c.country_iso && c.country_iso.toLowerCase().includes(q);
+          if (!matchName && !matchCat && !matchCountry && !matchIso) return false;
+        }
         return true;
       });
+    },
+
+    // Target Finder (Search Bar) Handlers
+    onSearchInput() {
+      const q = (this.searchQuery || "").trim().toLowerCase();
+      if (!q) {
+        this.searchResults = [];
+        this.searchDropdownOpen = false;
+        return;
+      }
+      const matches = this.challenges.filter(c => {
+        const nameMatch = c.name && c.name.toLowerCase().includes(q);
+        const catMatch = c.category && c.category.toLowerCase().includes(q);
+        const countryMatch = c.country_name && c.country_name.toLowerCase().includes(q);
+        const isoMatch = c.country_iso && c.country_iso.toLowerCase().includes(q);
+        return nameMatch || catMatch || countryMatch || isoMatch;
+      });
+      this.searchResults = matches.slice(0, 8);
+      this.searchDropdownOpen = (this.searchResults.length > 0 && !this.listView);
+    },
+
+    clearSearch() {
+      this.searchQuery = "";
+      this.searchResults = [];
+      this.searchDropdownOpen = false;
+    },
+
+    selectSearchResult(chal) {
+      this.searchDropdownOpen = false;
+      if (this.listView) {
+        this.loadChallenge(chal.id);
+        return;
+      }
+      if (chal.country_iso && this.countriesData[chal.country_iso]) {
+        this.engageCountry(this.countriesData[chal.country_iso]);
+      } else {
+        this.loadChallenge(chal.id);
+      }
+    },
+
+    engageFirstSearchResult() {
+      if (this.searchResults && this.searchResults.length > 0) {
+        this.selectSearchResult(this.searchResults[0]);
+      }
+    },
+
+    panToCountry(iso) {
+      if (!iso) return;
+      if (this.listView) {
+        this.listView = false;
+      }
+      const countryObj = this.countriesData[iso];
+      if (countryObj && countryObj.challenge) {
+        this.engageCountry(countryObj);
+        return;
+      }
+      let targetX = 504, targetY = 325.5;
+      if (typeof CALIBRATED_CENTROIDS !== "undefined" && CALIBRATED_CENTROIDS[iso]) {
+        targetX = CALIBRATED_CENTROIDS[iso][0];
+        targetY = CALIBRATED_CENTROIDS[iso][1];
+      }
+      const reticle = document.getElementById("svg-sniper-reticle");
+      if (reticle) {
+        reticle.setAttribute("transform", `translate(${targetX}, ${targetY})`);
+        reticle.style.display = "block";
+        reticle.classList.remove("locking");
+        void reticle.offsetWidth;
+        reticle.classList.add("locking");
+        setTimeout(() => { if (reticle) reticle.style.display = "none"; }, 1200);
+      }
+      this.zoomTo(targetX, targetY, 2.5);
     },
 
     loadChallenge(challengeId) {

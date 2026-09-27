@@ -32,6 +32,11 @@
           >{% trans %}Referrals{% endtrans %}
           </button>
           {% endif %}
+          <button
+              class="nav-link" id="settings-theme-tab" data-bs-toggle="pill" data-bs-target="#theme"
+              role="tab"
+          >Theme Settings
+          </button>
         </div>
       </div>
 
@@ -395,6 +400,66 @@
             </template>
           </div>
           {% endif %}
+
+          <!-- Theme & Interface Settings Tab -->
+          <div class="tab-pane fade" id="theme" role="tabpanel">
+            <div class="card bg-transparent border border-secondary border-opacity-25 p-4 mb-4">
+              <h4 class="font-display fw-bold text-success mb-2">
+                THEME &amp; INTERFACE SETTINGS
+              </h4>
+              <div class="text-muted mb-4 font-monospace small">
+                Customize your operative console, cyber sound effects, and HUD preferences.
+              </div>
+
+              <!-- Tactical Sound FX -->
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="user-sfx-toggle">
+                <label class="form-check-label fw-bold font-monospace" for="user-sfx-toggle">
+                  TACTICAL SOUND FX (SFX ENGINE)
+                </label>
+                <div class="form-text text-muted small">Synthesizes real-time terminal audio for challenge solves, access denied alerts, and radar target locks.</div>
+              </div>
+
+              <hr class="border-secondary opacity-25">
+
+              <!-- Target Finder Search Bar -->
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="user-search-toggle">
+                <label class="form-check-label fw-bold font-monospace" for="user-search-toggle">
+                  TARGET FINDER SEARCH BAR
+                </label>
+                <div class="form-text text-muted small">Show search bar on the gameboard HUD (/challenges). Keep disabled for a minimal, clean layout.</div>
+              </div>
+
+              <hr class="border-secondary opacity-25">
+
+              <!-- Field Guide HUD Button -->
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="user-guide-toggle">
+                <label class="form-check-label fw-bold font-monospace" for="user-guide-toggle">
+                  SHOW "GUIDE" BUTTON ON HUD
+                </label>
+                <div class="form-text text-muted small">Display the interactive briefing and tour guide button on the gameboard HUD bar.</div>
+              </div>
+
+              <hr class="border-secondary opacity-25">
+
+              <!-- Challenge Counts on Buttons -->
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="user-counts-toggle">
+                <label class="form-check-label fw-bold font-monospace" for="user-counts-toggle">
+                  SHOW CHALLENGE COUNTS ON BUTTONS
+                </label>
+                <div class="form-text text-muted small">Display count badges on telemetry buttons ("ALL (X)", "YOU (Y)", "HOSTILE (Z)").</div>
+              </div>
+
+              <div class="mt-3" id="user-theme-saved-notice" style="display: none;">
+                <span class="text-success font-monospace small">
+                  <i class="fas fa-check me-1"></i>Preference updated successfully.
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -404,8 +469,114 @@
 {% block scripts %}
   {{ Assets.js("assets/js/settings.js") }}
   <script>
-    document.addEventListener("alpine:init", () => {
-      Alpine.data("ReferralsSettings", () => ({
+    // Tab switching for user settings (e.g. /settings#theme)
+    function switchSettingsTab(targetId) {
+      if (!targetId) return;
+      targetId = targetId.replace("#", "");
+      const targetPane = document.getElementById(targetId);
+      if (!targetPane) return;
+
+      document.querySelectorAll(".nav-pills .nav-link").forEach(btn => {
+        const btnTarget = (btn.getAttribute("data-bs-target") || btn.getAttribute("data-target") || "").replace("#", "");
+        if (btnTarget === targetId) {
+          btn.classList.add("active");
+        } else {
+          btn.classList.remove("active");
+        }
+      });
+
+      document.querySelectorAll(".tab-content .tab-pane").forEach(pane => {
+        if (pane.id === targetId) {
+          pane.classList.add("show", "active");
+        } else {
+          pane.classList.remove("show", "active");
+        }
+      });
+    }
+
+    document.querySelectorAll(".nav-pills .nav-link").forEach(btn => {
+      btn.addEventListener("click", function() {
+        const targetId = (this.getAttribute("data-bs-target") || this.getAttribute("data-target") || "").replace("#", "");
+        if (targetId) {
+          switchSettingsTab(targetId);
+          if (history.pushState) {
+            history.pushState(null, null, "#" + targetId);
+          }
+        }
+      });
+    });
+
+    if (window.location.hash) {
+      switchSettingsTab(window.location.hash);
+    }
+
+    // Theme Settings Toggles Handling
+    const sfxToggle = document.getElementById("user-sfx-toggle");
+    const searchToggle = document.getElementById("user-search-toggle");
+    const guideToggle = document.getElementById("user-guide-toggle");
+    const countsToggle = document.getElementById("user-counts-toggle");
+    const savedNotice = document.getElementById("user-theme-saved-notice");
+    let noticeTimeout = null;
+
+    function notifySaved() {
+      if (!savedNotice) return;
+      savedNotice.style.display = "block";
+      if (noticeTimeout) clearTimeout(noticeTimeout);
+      noticeTimeout = setTimeout(() => {
+        savedNotice.style.display = "none";
+      }, 2000);
+    }
+
+    if (sfxToggle) {
+      sfxToggle.checked = localStorage.getItem("world_audio_muted") !== "true";
+      sfxToggle.addEventListener("change", function() {
+        localStorage.setItem("world_audio_muted", (!this.checked).toString());
+        if (window.WorldAudio) {
+          window.WorldAudio.muted = !this.checked;
+          if (this.checked && typeof window.WorldAudio.playBlip === "function") {
+            window.WorldAudio.playBlip();
+          }
+        }
+        notifySaved();
+      });
+    }
+
+    if (searchToggle) {
+      searchToggle.checked = localStorage.getItem("world_user_search_enabled") === "true";
+      searchToggle.addEventListener("change", function() {
+        localStorage.setItem("world_user_search_enabled", this.checked.toString());
+        notifySaved();
+      });
+    }
+
+    if (guideToggle) {
+      const userGuide = localStorage.getItem("world_user_guide_enabled");
+      const tutorialDone = localStorage.getItem("world_theme_tutorial_completed_v1");
+      if (userGuide !== null) {
+        guideToggle.checked = (userGuide === "true");
+      } else if (tutorialDone === "true") {
+        guideToggle.checked = false;
+      } else {
+        guideToggle.checked = true;
+      }
+
+      guideToggle.addEventListener("change", function() {
+        localStorage.setItem("world_user_guide_enabled", this.checked.toString());
+        notifySaved();
+      });
+    }
+
+    if (countsToggle) {
+      countsToggle.checked = localStorage.getItem("world_user_counts_enabled") !== "false";
+      countsToggle.addEventListener("change", function() {
+        localStorage.setItem("world_user_counts_enabled", this.checked.toString());
+        notifySaved();
+      });
+    }
+
+    // Register ReferralsSettings for Alpine
+    window.ReferralsSettings = function() {
+      return {
         loading: true,
         data: null,
         async loadReferrals() {
@@ -436,7 +607,14 @@
             }, 2000);
           });
         }
-      }));
-    });
+      };
+    };
+    if (window.Alpine) {
+      window.Alpine.data("ReferralsSettings", window.ReferralsSettings);
+    } else {
+      document.addEventListener("alpine:init", () => {
+        window.Alpine.data("ReferralsSettings", window.ReferralsSettings);
+      });
+    }
   </script>
 {% endblock %}

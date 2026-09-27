@@ -21,8 +21,13 @@
       <!-- Navigation Tabs -->
       <ul class="nav nav-tabs mb-4" id="themeSettingsTabs" role="tablist">
         <li class="nav-item">
-          <a class="nav-link active" id="display-tab" data-bs-toggle="tab" data-toggle="tab" href="#display" role="tab">
-            Display &amp; Visuals
+          <a class="nav-link active" id="visuals-tab" data-bs-toggle="tab" data-toggle="tab" href="#visuals" role="tab">
+            Visuals &amp; Gameboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" id="directory-tab" data-bs-toggle="tab" data-toggle="tab" href="#directory" role="tab">
+            Directories &amp; Leaderboard
           </a>
         </li>
         <li class="nav-item">
@@ -49,14 +54,14 @@
 
       <div class="tab-content" id="themeSettingsTabContent">
         
-        <!-- Tab 1: Display & Visuals -->
-        <div class="tab-pane fade show active" id="display" role="tabpanel">
+        <!-- Tab 1: Visuals & Gameboard -->
+        <div class="tab-pane fade show active" id="visuals" role="tabpanel">
           <div class="card mb-4">
             <div class="card-header">
               <h5 class="mb-0">Matrix Visual &amp; Interface Configuration</h5>
             </div>
             <div class="card-body">
-              <form id="display-form">
+              <form id="visuals-form">
                 <div class="mb-3">
                   <label class="form-label fw-bold" for="grid-title-input">Command Grid Header Title</label>
                   <input type="text" class="form-control" id="grid-title-input" value="{{ theme_configs.grid_title }}" style="max-width: 450px;">
@@ -70,6 +75,17 @@
                     <option value="grid" {% if theme_configs.default_view == 'grid' %}selected{% endif %}>Grid / List View</option>
                   </select>
                   <div class="form-text text-muted">The initial view mode presented to players when navigating to <code>/challenges</code>.</div>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label fw-bold" for="accent-palette-select">Theme Cyber Accent Palette</label>
+                  <select class="form-select" id="accent-palette-select" style="max-width: 320px;">
+                    <option value="matrix_green" {% if theme_configs.accent_palette == 'matrix_green' %}selected{% endif %}>Matrix Green (Default)</option>
+                    <option value="cyberpunk_cyan" {% if theme_configs.accent_palette == 'cyberpunk_cyan' %}selected{% endif %}>Cyberpunk Cyan</option>
+                    <option value="solar_amber" {% if theme_configs.accent_palette == 'solar_amber' %}selected{% endif %}>Solar Amber</option>
+                    <option value="hostile_crimson" {% if theme_configs.accent_palette == 'hostile_crimson' %}selected{% endif %}>Hostile Crimson</option>
+                  </select>
+                  <div class="form-text text-muted">Tactical color scheme applied across the map, borders, glow shaders, HUD meters, and buttons.</div>
                 </div>
 
                 <hr>
@@ -125,6 +141,10 @@
                       <label class="form-check-label fw-bold" for="sector-filter-toggle">Show "Filter Sectors" Dropdown</label>
                     </div>
                     <div class="form-check form-switch mb-2">
+                      <input class="form-check-input" type="checkbox" id="search-bar-toggle" {% if theme_configs.search_enabled %}checked{% endif %}>
+                      <label class="form-check-label fw-bold" for="search-bar-toggle">Show "TARGET FINDER" Search Bar</label>
+                    </div>
+                    <div class="form-check form-switch mb-2">
                       <input class="form-check-input" type="checkbox" id="guide-btn-toggle" {% if theme_configs.guide_enabled %}checked{% endif %}>
                       <label class="form-check-label fw-bold" for="guide-btn-toggle">Show "GUIDE" Button</label>
                     </div>
@@ -135,10 +155,244 @@
                   </div>
                 </div>
 
-                <button type="button" class="btn btn-success" id="save-display-btn">
-                  Save Display Settings
+                <hr>
+                <h5 class="mb-3">Challenge Indicators</h5>
+                <div class="row g-3 mb-4">
+                  <div class="col-md-6">
+                    <div class="form-check form-switch mb-3">
+                      <input class="form-check-input" type="checkbox" id="challenge-territory-toggle" {% if theme_configs.challenge_territory_badge %}checked{% endif %}>
+                      <label class="form-check-label fw-bold" for="challenge-territory-toggle">
+                        Challenge Territory Badge
+                      </label>
+                      <div class="form-text text-muted">Display the assigned country flag, territory name, and First Blood bonus points in the challenge modal header.</div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-check form-switch mb-3">
+                      <input class="form-check-input" type="checkbox" id="challenge-first-blood-toggle" {% if theme_configs.challenge_first_blood_badge %}checked{% endif %}>
+                      <label class="form-check-label fw-bold" for="challenge-first-blood-toggle">
+                        First Blood Indicator in Solves Table
+                      </label>
+                      <div class="form-text text-muted">Display the FIRST BLOOD highlight badge for the first operative or team in the challenge solves list.</div>
+                    </div>
+                  </div>
+                </div>
+
+                <hr>
+                <h5 class="mb-3">Platform Footer Customization</h5>
+                <div class="row g-3 mb-4">
+                  <div class="col-md-7">
+                    <label class="form-label fw-bold" for="footer-text-input">Custom Footer Text / Branding</label>
+                    <input type="text" class="form-control" id="footer-text-input" value="{{ theme_configs.footer_text }}" placeholder="Powered by CTFd // Secured by CyberCommand">
+                    <div class="form-text text-muted">Custom text or HTML to display in the platform footer. Leave blank for default "Powered by CTFd".</div>
+                  </div>
+                  <div class="col-md-5">
+                    <label class="form-label fw-bold" for="footer-url-input">Footer Target Link URL</label>
+                    <input type="url" class="form-control font-monospace" id="footer-url-input" value="{{ theme_configs.footer_url }}" placeholder="https://example.com">
+                    <div class="form-text text-muted">Optional destination link URL (defaults to https://ctfd.io if empty).</div>
+                  </div>
+                </div>
+
+                <hr>
+                <h5 class="mb-3">Navbar Controls</h5>
+                <div class="row g-3 mb-4">
+                  <div class="col-md-6">
+                    <div class="form-check form-switch mb-3">
+                      <input class="form-check-input" type="checkbox" id="hide-language-selector-toggle" {% if theme_configs.hide_language_selector %}checked{% endif %}>
+                      <label class="form-check-label fw-bold" for="hide-language-selector-toggle">
+                        Hide Language Selector Button
+                      </label>
+                      <div class="form-text text-muted">Hides the language/locale dropdown button from the navigation bar. Useful when your competition runs in a single language.</div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-check form-switch mb-3">
+                      <input class="form-check-input" type="checkbox" id="hide-theme-toggle" {% if theme_configs.hide_theme_toggle %}checked{% endif %}>
+                      <label class="form-check-label fw-bold" for="hide-theme-toggle">
+                        Hide Dark / Light Mode Toggle
+                      </label>
+                      <div class="form-text text-muted">Hides the sun/moon theme toggle button from the navigation bar. Locks participants to the current default color mode.</div>
+                    </div>
+                  </div>
+                  <div class="col-md-12">
+                    <div class="mb-3">
+                      <label class="form-label fw-bold" for="navbar-compact-mode-select">Navbar Right Menu Display Mode</label>
+                      <select class="form-select" id="navbar-compact-mode-select" style="max-width: 380px;">
+                        <option value="auto" {% if theme_configs.navbar_compact_mode == 'auto' or not theme_configs.navbar_compact_mode %}selected{% endif %}>Auto-collapse to icons on overflow (Recommended)</option>
+                        <option value="icons" {% if theme_configs.navbar_compact_mode == 'icons' %}selected{% endif %}>Always Icons Only (Compact Cyber HUD)</option>
+                        <option value="full" {% if theme_configs.navbar_compact_mode == 'full' %}selected{% endif %}>Always Full Text Labels</option>
+                      </select>
+                      <div class="form-text text-muted">Controls how right-side navigation items (Admin Panel, Notifications, Team, Profile, Settings) are presented. In Auto mode, labels automatically collapse to icons when space is constrained or on smaller viewports.</div>
+                    </div>
+                  </div>
+                </div>
+
+                <button type="button" class="btn btn-success" id="save-visuals-btn">
+                  Save Visual Settings
                 </button>
-                <span id="display-status" class="ms-2 fw-bold"></span>
+                <span id="visuals-status" class="ms-2 fw-bold"></span>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Directories & Leaderboard -->
+        <div class="tab-pane fade" id="directory" role="tabpanel">
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5 class="mb-0">Directory Rosters, Custom Attributes &amp; Scoreboard Display</h5>
+            </div>
+            <div class="card-body">
+              <form id="directory-form">
+
+                <!-- Custom Banners & Telemetry Header Titles -->
+                <h5 class="mb-3">Custom Banners &amp; Header Titles</h5>
+                <div class="row g-3 mb-4">
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold" for="header-operative-dir-input">Operative Directory Banner (/users)</label>
+                    <input type="text" class="form-control font-monospace" id="header-operative-dir-input" value="{{ theme_configs.header_operative_directory }}">
+                    <div class="form-text text-muted">Default: <code>[ OPERATIVE DIRECTORY ]</code></div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold" for="header-syndicate-dir-input">Syndicate Directory Banner (/teams)</label>
+                    <input type="text" class="form-control font-monospace" id="header-syndicate-dir-input" value="{{ theme_configs.header_syndicate_directory }}">
+                    <div class="form-text text-muted">Default: <code>[ SYNDICATE DIRECTORY ]</code></div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold" for="header-scoreboard-graph-input">Scoreboard Orbital Telemetry Header (/scoreboard)</label>
+                    <input type="text" class="form-control font-monospace" id="header-scoreboard-graph-input" value="{{ theme_configs.header_scoreboard_graph }}">
+                    <div class="form-text text-muted">Default: <code>[ ORBITAL SCOREBOARD TELEMETRY // TOP CONTENDERS ]</code></div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold" for="header-territory-dom-input">Geopolitical Territory Dominance Header (/scoreboard)</label>
+                    <input type="text" class="form-control font-monospace" id="header-territory-dom-input" value="{{ theme_configs.header_territory_dominance }}">
+                    <div class="form-text text-muted">Default: <code>[ GEOPOLITICAL TERRITORY DOMINANCE // TOP CONQUERORS ]</code></div>
+                  </div>
+                  <div class="col-md-12">
+                    <label class="form-label fw-bold" for="header-scoreboard-tbl-input">Operational Leaderboard Toggle Banner (/scoreboard)</label>
+                    <input type="text" class="form-control font-monospace" id="header-scoreboard-tbl-input" value="{{ theme_configs.header_scoreboard_table }}">
+                    <div class="form-text text-muted">Default: <code>[ OPERATIONAL LEADERBOARD ]</code></div>
+                  </div>
+                </div>
+
+                <hr>
+
+                <!-- Directory & Scoreboard View Modes -->
+                <div class="card mb-4 border-secondary border-opacity-25">
+                  <div class="card-header">
+                    <h6 class="mb-0 fw-bold">Directory &amp; Scoreboard Display Modes</h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="form-check form-switch mb-3">
+                          <input class="form-check-input" type="checkbox" id="directory-table-view-toggle" {% if theme_configs.directory_table_view %}checked{% endif %}>
+                          <label class="form-check-label fw-bold" for="directory-table-view-toggle">
+                            Show Table View
+                          </label>
+                          <div class="form-text text-muted">Enable classic tabular roster layout on <code>/users</code>, <code>/teams</code>, and <code>/scoreboard</code>.</div>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-check form-switch mb-3">
+                          <input class="form-check-input" type="checkbox" id="directory-card-view-toggle" {% if theme_configs.directory_card_view %}checked{% endif %}>
+                          <label class="form-check-label fw-bold" for="directory-card-view-toggle">
+                            Show Card View (Dossier Mode)
+                          </label>
+                          <div class="form-text text-muted">Enable interactive cyber dossier cards layout on <code>/users</code>, <code>/teams</code>, and <code>/scoreboard</code>.</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="mb-2" style="max-width: 320px;">
+                      <label class="form-label fw-bold" for="directory-default-view-select">Default View Mode</label>
+                      <select class="form-select" id="directory-default-view-select">
+                        <option value="table" {% if theme_configs.directory_default_view != 'card' %}selected{% endif %}>Table View</option>
+                        <option value="card" {% if theme_configs.directory_default_view == 'card' %}selected{% endif %}>Card View (Dossier Mode)</option>
+                      </select>
+                      <div class="form-text text-muted">Initial presentation when both view modes are enabled.</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Directory Roster Columns -->
+                <h5 class="mb-3">Directory Table &amp; Dossier Customization</h5>
+                <div class="row g-3 mb-4">
+                  <div class="col-md-6">
+                    <div class="form-check form-switch mb-3">
+                      <input class="form-check-input" type="checkbox" id="directory-team-toggle" {% if theme_configs.directory_show_team %}checked{% endif %}>
+                      <label class="form-check-label fw-bold" for="directory-team-toggle">
+                        Show Team Column on Users Directory
+                      </label>
+                      <div class="form-text text-muted">Display the operative's associated team on <code>/users</code> when team mode is enabled.</div>
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                      <input class="form-check-input" type="checkbox" id="directory-website-toggle" {% if theme_configs.directory_show_website %}checked{% endif %}>
+                      <label class="form-check-label fw-bold" for="directory-website-toggle">
+                        Show Website Column
+                      </label>
+                      <div class="form-text text-muted">Display participant external website links on <code>/users</code> and <code>/teams</code>.</div>
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                      <input class="form-check-input" type="checkbox" id="directory-custom-fields-toggle" {% if theme_configs.directory_show_custom_fields %}checked{% endif %}>
+                      <label class="form-check-label fw-bold" for="directory-custom-fields-toggle">
+                        Show Custom Attributes
+                      </label>
+                      <div class="form-text text-muted">Display configured custom attribute columns on directory rosters and dossier cards.</div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-check form-switch mb-3">
+                      <input class="form-check-input" type="checkbox" id="directory-affiliation-toggle" {% if theme_configs.directory_show_affiliation %}checked{% endif %}>
+                      <label class="form-check-label fw-bold" for="directory-affiliation-toggle">
+                        Show Affiliation Column
+                      </label>
+                      <div class="form-text text-muted">Display organization or university affiliation on <code>/users</code> and <code>/teams</code>.</div>
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                      <input class="form-check-input" type="checkbox" id="directory-country-toggle" {% if theme_configs.directory_show_country %}checked{% endif %}>
+                      <label class="form-check-label fw-bold" for="directory-country-toggle">
+                        Show Country Flag Column
+                      </label>
+                      <div class="form-text text-muted">Display national country indicators on <code>/users</code> and <code>/teams</code>.</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mb-4">
+                  <label class="form-label fw-bold" for="directory-custom-fields-input">Custom Attribute Columns (Comma-separated)</label>
+                  <input type="text" class="form-control font-monospace" id="directory-custom-fields-input" value="{{ theme_configs.directory_custom_fields }}" placeholder="e.g. Gang, Discord, Department">
+                  <div class="form-text text-muted">Enter specific custom field names separated by commas to display each as its own dedicated column (e.g. entering "Gang" creates a dedicated "Gang" column on <code>/users</code> and <code>/teams</code> instead of a generic attributes header). Leave empty to omit custom attribute columns.</div>
+                </div>
+
+                <hr>
+
+                <!-- Scoreboard Settings & Top Conquerors Count -->
+                <h5 class="mb-3">Scoreboard Indicators &amp; Dominance Roster</h5>
+                <div class="row g-3 mb-4">
+                  <div class="col-md-6">
+                    <div class="form-check form-switch mb-3">
+                      <input class="form-check-input" type="checkbox" id="scoreboard-flags-toggle" {% if theme_configs.scoreboard_country_flags %}checked{% endif %}>
+                      <label class="form-check-label fw-bold" for="scoreboard-flags-toggle">
+                        Scoreboard Country Flags
+                      </label>
+                      <div class="form-text text-muted">Display country flag indicators beside player and team names in the scoreboard standings table.</div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold" for="dominance-top-count-input">Top Conquerors Display Count (Territory Dominance)</label>
+                    <input type="number" min="1" max="20" class="form-control" id="dominance-top-count-input" value="{{ theme_configs.dominance_top_count }}" style="max-width: 200px;">
+                    <div class="form-text text-muted">Number of top territory conquerors shown in the Geopolitical Dominance capsule on /scoreboard (default: 4).</div>
+                  </div>
+                </div>
+
+                <button type="button" class="btn btn-success" id="save-directory-btn">
+                  Save Directory &amp; Leaderboard Settings
+                </button>
+                <span id="directory-status" class="ms-2 fw-bold"></span>
               </form>
             </div>
           </div>
@@ -163,29 +417,33 @@
                   </div>
                 </div>
 
-                <div class="row g-3 mb-3 ps-4">
-                  <div class="col-md-6">
-                    <label class="form-label fw-bold" for="live-feed-title-input">Live Feed Header Name / Title</label>
-                    <input type="text" class="form-control" id="live-feed-title-input" value="{{ theme_configs.live_feed_title }}">
-                    <div class="form-text text-muted">Title displayed on the live feed drawer header (default: <code>[ LIVE FEED ]</code>).</div>
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label fw-bold" for="live-feed-subtitle-input">Live Feed Subtitle / Tagline</label>
-                    <input type="text" class="form-control" id="live-feed-subtitle-input" value="{{ theme_configs.live_feed_subtitle }}">
-                    <div class="form-text text-muted">Subtitle displayed below the title (default: <code>ORBITAL UPLINK ACTIVE • 20s CYCLE</code>).</div>
+                <div class="ps-4 mb-3">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label fw-bold" for="live-feed-title-input">Live Feed Header Name / Title</label>
+                      <input type="text" class="form-control" id="live-feed-title-input" value="{{ theme_configs.live_feed_title }}">
+                      <div class="form-text text-muted">Title displayed on the live feed drawer header (default: <code>[ LIVE FEED ]</code>).</div>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label fw-bold" for="live-feed-subtitle-input">Live Feed Subtitle / Tagline</label>
+                      <input type="text" class="form-control" id="live-feed-subtitle-input" value="{{ theme_configs.live_feed_subtitle }}">
+                      <div class="form-text text-muted">Subtitle displayed below the title (default: <code>ORBITAL UPLINK ACTIVE &bull; 20s CYCLE</code>).</div>
+                    </div>
                   </div>
                 </div>
 
-                <div class="row g-3 mb-4 ps-4">
-                  <div class="col-md-6">
-                    <label class="form-label fw-bold" for="live-feed-interval">Polling Interval (Seconds)</label>
-                    <input type="number" min="5" max="120" class="form-control" id="live-feed-interval" value="{{ theme_configs.live_feed_interval }}">
-                    <div class="form-text text-muted">How frequently the client checks for new solves (minimum 5s, default 20s).</div>
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label fw-bold" for="live-feed-limit">History Depth (Events)</label>
-                    <input type="number" min="5" max="100" class="form-control" id="live-feed-limit" value="{{ theme_configs.live_feed_limit }}">
-                    <div class="form-text text-muted">Maximum number of recent solves returned in the feed (default 30).</div>
+                <div class="ps-4 mb-4">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label fw-bold" for="live-feed-interval">Polling Interval (Seconds)</label>
+                      <input type="number" min="5" max="120" class="form-control" id="live-feed-interval" value="{{ theme_configs.live_feed_interval }}">
+                      <div class="form-text text-muted">How frequently the client checks for new solves (minimum 5s, default 20s).</div>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label fw-bold" for="live-feed-limit">History Depth (Events)</label>
+                      <input type="number" min="5" max="100" class="form-control" id="live-feed-limit" value="{{ theme_configs.live_feed_limit }}">
+                      <div class="form-text text-muted">Maximum number of recent solves returned in the feed (default 30).</div>
+                    </div>
                   </div>
                 </div>
 
@@ -207,6 +465,25 @@
                     Reset Tour for All Players (Force Retake)
                   </button>
                   <div class="form-text text-muted">Clears the client tour completion flag so all operatives receive the briefing again.</div>
+                </div>
+
+                <hr>
+
+                <!-- Global Dominance Dashboard -->
+                <div class="form-check form-switch mb-3">
+                  <input class="form-check-input" type="checkbox" id="global-dominance-toggle" {% if theme_configs.global_dominance_enabled %}checked{% endif %}>
+                  <label class="form-check-label fw-bold" for="global-dominance-toggle">
+                    Global Dominance &amp; Territory Control Leaderboard
+                  </label>
+                  <div class="form-text text-muted">Displays real-time geopolitical territory conquest telemetry and top conqueror leaderboards on the scoreboard.</div>
+                </div>
+
+                <div class="form-check form-switch mb-3">
+                  <input class="form-check-input" type="checkbox" id="sound-effects-toggle" {% if theme_configs.sound_effects_enabled %}checked{% endif %}>
+                  <label class="form-check-label fw-bold" for="sound-effects-toggle">
+                    Tactical Sound FX (SFX Engine)
+                  </label>
+                  <div class="form-text text-muted">Synthesizes zero-latency tactical audio effects for challenge solves, access denied errors, and radar lock clicks.</div>
                 </div>
 
                 <hr>
@@ -260,6 +537,9 @@
                       <h4 class="mb-0">Content</h4>
                       <small class="text-muted">This is the HTML or Markdown content of your homepage terminal card</small>
                     </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="restore-home-default-btn">
+                      Restore Default Template
+                    </button>
                   </div>
 
                   <textarea class="form-control font-monospace" id="matrix-home-content-input" rows="20" style="resize: vertical; font-size: 0.88rem; line-height: 1.5;">{% if theme_configs.matrix_home_content %}{{ theme_configs.matrix_home_content }}{% else %}<div class="matrix-terminal-card">
@@ -360,6 +640,9 @@
                       <h4 class="mb-0">Content</h4>
                       <small class="text-muted">This is the HTML or Markdown content of your countdown page</small>
                     </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="restore-countdown-default-btn">
+                      Restore Default Template
+                    </button>
                   </div>
 
                   <textarea class="form-control font-monospace" id="countdown-content-input" rows="20" style="resize: vertical; font-size: 0.88rem; line-height: 1.5;">{% if theme_configs.countdown_content %}{{ theme_configs.countdown_content }}{% else %}<div class="hud-status-badge mb-3 text-center">
@@ -381,7 +664,7 @@
       </div>
       <div class="briefing-content font-monospace text-light" style="font-size: 0.9rem; line-height: 1.7;">
         <div>Operatives, satellite telemetry feeds are currently synchronizing with the central orbital command grid. Stand by for target activation and global node breach authorization.</div>
-        <div class="mb-0 text-muted small">// ALL CONNECTIONS MONITORED • REPORT ANOMALIES TO COMMAND</div>
+        <div class="mb-0 text-muted small">// ALL CONNECTIONS MONITORED &bull; REPORT ANOMALIES TO COMMAND</div>
       </div>
     </div>
   </div>
@@ -493,7 +776,45 @@
 {% block scripts %}
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-  const csrfToken = (window.init && window.init.csrfNonce) || "";
+  const csrfToken = "{{ Session.nonce }}" || (window.init && window.init.csrfNonce) || "";
+
+  // Tab Switching
+  function switchThemeTab(targetId) {
+    if (!targetId) return;
+    targetId = targetId.replace("#", "");
+
+    document.querySelectorAll("#themeSettingsTabs .nav-link").forEach(btn => {
+      const btnTarget = (btn.getAttribute("data-bs-target") || btn.getAttribute("data-target") || btn.getAttribute("href") || "").replace("#", "");
+      if (btnTarget === targetId) {
+        btn.classList.add("active");
+      } else {
+        btn.classList.remove("active");
+      }
+    });
+
+    document.querySelectorAll("#themeSettingsTabContent .tab-pane").forEach(pane => {
+      if (pane.id === targetId) {
+        pane.classList.add("show", "active");
+      } else {
+        pane.classList.remove("show", "active");
+      }
+    });
+  }
+
+  document.querySelectorAll("#themeSettingsTabs .nav-link").forEach(btn => {
+    btn.addEventListener("click", function(e) {
+      e.preventDefault();
+      const targetId = (this.getAttribute("data-bs-target") || this.getAttribute("data-target") || this.getAttribute("href") || "").replace("#", "");
+      switchThemeTab(targetId);
+      if (history.pushState) {
+        history.pushState(null, null, "#" + targetId);
+      }
+    });
+  });
+
+  if (window.location.hash) {
+    switchThemeTab(window.location.hash);
+  }
 
   // 1. Save Challenge Country Assignment (Per-row)
   document.querySelectorAll(".save-chal-btn").forEach(btn => {
@@ -538,55 +859,140 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   });
 
-  // 2. Save Display & Visual Settings
-  document.getElementById("save-display-btn").addEventListener("click", function() {
-    const scanlines = document.getElementById("scanlines-toggle").checked;
-    const crtGlow = document.getElementById("crt-glow-toggle").checked;
-    const zoomAnim = document.getElementById("zoom-animation-toggle").checked;
-    const gridTitle = document.getElementById("grid-title-input").value;
-    const defaultView = document.getElementById("default-view-select").value;
+  // 2. Save Visuals & Gameboard Settings
+  const saveVisualsBtn = document.getElementById("save-visuals-btn");
+  if (saveVisualsBtn) {
+    saveVisualsBtn.addEventListener("click", function() {
+      const scanlines = document.getElementById("scanlines-toggle").checked;
+      const crtGlow = document.getElementById("crt-glow-toggle").checked;
+      const zoomAnim = document.getElementById("zoom-animation-toggle").checked;
+      const gridTitle = document.getElementById("grid-title-input").value;
+      const defaultView = document.getElementById("default-view-select").value;
+      const accentPalette = document.getElementById("accent-palette-select") ? document.getElementById("accent-palette-select").value : "matrix_green";
 
-    const filterAll = document.getElementById("filter-all-nodes-toggle").checked;
-    const filterBreached = document.getElementById("filter-breached-toggle").checked;
-    const filterHostile = document.getElementById("filter-hostile-toggle").checked;
-    const filterCounts = document.getElementById("filter-counts-toggle").checked;
-    const sectorFilter = document.getElementById("sector-filter-toggle").checked;
-    const guideBtn = document.getElementById("guide-btn-toggle").checked;
-    const viewToggle = document.getElementById("view-toggle-btn-toggle").checked;
+      const filterAll = document.getElementById("filter-all-nodes-toggle").checked;
+      const filterBreached = document.getElementById("filter-breached-toggle").checked;
+      const filterHostile = document.getElementById("filter-hostile-toggle").checked;
+      const filterCounts = document.getElementById("filter-counts-toggle").checked;
+      const sectorFilter = document.getElementById("sector-filter-toggle").checked;
+      const guideBtn = document.getElementById("guide-btn-toggle").checked;
+      const viewToggle = document.getElementById("view-toggle-btn-toggle").checked;
 
-    const status = document.getElementById("display-status");
+      const challengeTerritory = document.getElementById("challenge-territory-toggle").checked;
+      const challengeFirstBlood = document.getElementById("challenge-first-blood-toggle").checked;
+      const searchBar = document.getElementById("search-bar-toggle") ? document.getElementById("search-bar-toggle").checked : true;
 
-    status.className = "ms-2 text-muted";
-    status.textContent = "Saving...";
+      const footerText = document.getElementById("footer-text-input") ? document.getElementById("footer-text-input").value : "";
+      const footerUrl = document.getElementById("footer-url-input") ? document.getElementById("footer-url-input").value : "";
 
-    fetch("/api/v1/world/settings", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "CSRF-Token": csrfToken
-      },
-      body: JSON.stringify({
-        scanlines_enabled: scanlines,
-        crt_glow_enabled: crtGlow,
-        zoom_animation_enabled: zoomAnim,
-        grid_title: gridTitle,
-        default_view: defaultView,
-        filter_all_nodes_enabled: filterAll,
-        filter_breached_enabled: filterBreached,
-        filter_hostile_enabled: filterHostile,
-        filter_counts_enabled: filterCounts,
-        sector_filter_enabled: sectorFilter,
-        guide_enabled: guideBtn,
-        view_toggle_enabled: viewToggle
+      const hideLanguageSelector = document.getElementById("hide-language-selector-toggle") ? document.getElementById("hide-language-selector-toggle").checked : false;
+      const hideThemeToggle = document.getElementById("hide-theme-toggle") ? document.getElementById("hide-theme-toggle").checked : false;
+      const navbarCompactMode = document.getElementById("navbar-compact-mode-select") ? document.getElementById("navbar-compact-mode-select").value : "auto";
+
+      const status = document.getElementById("visuals-status");
+      status.className = "ms-2 text-muted";
+      status.textContent = "Saving...";
+
+      fetch("/api/v1/world/settings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "CSRF-Token": csrfToken
+        },
+        body: JSON.stringify({
+          scanlines_enabled: scanlines,
+          crt_glow_enabled: crtGlow,
+          zoom_animation_enabled: zoomAnim,
+          grid_title: gridTitle,
+          default_view: defaultView,
+          accent_palette: accentPalette,
+          filter_all_nodes_enabled: filterAll,
+          filter_breached_enabled: filterBreached,
+          filter_hostile_enabled: filterHostile,
+          filter_counts_enabled: filterCounts,
+          sector_filter_enabled: sectorFilter,
+          guide_enabled: guideBtn,
+          view_toggle_enabled: viewToggle,
+          challenge_territory_badge: challengeTerritory,
+          challenge_first_blood_badge: challengeFirstBlood,
+          search_enabled: searchBar,
+          footer_text: footerText,
+          footer_url: footerUrl,
+          hide_language_selector: hideLanguageSelector,
+          hide_theme_toggle: hideThemeToggle,
+          navbar_compact_mode: navbarCompactMode
+        })
       })
-    })
-    .then(r => r.json())
-    .then(res => {
-      status.className = "ms-2 text-success";
-      status.textContent = "Display settings saved!";
-      setTimeout(() => { status.textContent = ""; }, 3000);
+      .then(r => r.json())
+      .then(res => {
+        status.className = "ms-2 text-success";
+        status.textContent = "Visual settings saved!";
+        setTimeout(() => { status.textContent = ""; }, 3000);
+      });
     });
-  });
+  }
+
+  // 2b. Save Directories & Leaderboard Settings
+  const saveDirectoryBtn = document.getElementById("save-directory-btn");
+  if (saveDirectoryBtn) {
+    saveDirectoryBtn.addEventListener("click", function() {
+      const headerOperative = document.getElementById("header-operative-dir-input") ? document.getElementById("header-operative-dir-input").value : "";
+      const headerSyndicate = document.getElementById("header-syndicate-dir-input") ? document.getElementById("header-syndicate-dir-input").value : "";
+      const headerScoreboardGraph = document.getElementById("header-scoreboard-graph-input") ? document.getElementById("header-scoreboard-graph-input").value : "";
+      const headerTerritoryDom = document.getElementById("header-territory-dom-input") ? document.getElementById("header-territory-dom-input").value : "";
+      const headerScoreboardTbl = document.getElementById("header-scoreboard-tbl-input") ? document.getElementById("header-scoreboard-tbl-input").value : "";
+
+      const dirTableView = document.getElementById("directory-table-view-toggle") ? document.getElementById("directory-table-view-toggle").checked : true;
+      const dirCardView = document.getElementById("directory-card-view-toggle") ? document.getElementById("directory-card-view-toggle").checked : true;
+      const dirDefaultView = document.getElementById("directory-default-view-select") ? document.getElementById("directory-default-view-select").value : "table";
+
+      const dirTeam = document.getElementById("directory-team-toggle") ? document.getElementById("directory-team-toggle").checked : true;
+      const dirWebsite = document.getElementById("directory-website-toggle") ? document.getElementById("directory-website-toggle").checked : true;
+      const dirCustomFields = document.getElementById("directory-custom-fields-toggle") ? document.getElementById("directory-custom-fields-toggle").checked : true;
+      const dirCustomFieldsNames = document.getElementById("directory-custom-fields-input") ? document.getElementById("directory-custom-fields-input").value : "";
+      const dirAffiliation = document.getElementById("directory-affiliation-toggle") ? document.getElementById("directory-affiliation-toggle").checked : true;
+      const dirCountry = document.getElementById("directory-country-toggle") ? document.getElementById("directory-country-toggle").checked : true;
+
+      const scoreboardFlags = document.getElementById("scoreboard-flags-toggle") ? document.getElementById("scoreboard-flags-toggle").checked : true;
+      const dominanceTopCount = document.getElementById("dominance-top-count-input") ? parseInt(document.getElementById("dominance-top-count-input").value) || 4 : 4;
+
+      const status = document.getElementById("directory-status");
+      status.className = "ms-2 text-muted";
+      status.textContent = "Saving...";
+
+      fetch("/api/v1/world/settings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "CSRF-Token": csrfToken
+        },
+        body: JSON.stringify({
+          header_operative_directory: headerOperative,
+          header_syndicate_directory: headerSyndicate,
+          header_scoreboard_graph: headerScoreboardGraph,
+          header_territory_dominance: headerTerritoryDom,
+          header_scoreboard_table: headerScoreboardTbl,
+          directory_table_view: dirTableView,
+          directory_card_view: dirCardView,
+          directory_default_view: dirDefaultView,
+          directory_show_team: dirTeam,
+          directory_show_website: dirWebsite,
+          directory_show_custom_fields: dirCustomFields,
+          directory_custom_fields: dirCustomFieldsNames,
+          directory_show_affiliation: dirAffiliation,
+          directory_show_country: dirCountry,
+          scoreboard_country_flags: scoreboardFlags,
+          dominance_top_count: dominanceTopCount
+        })
+      })
+      .then(r => r.json())
+      .then(res => {
+        status.className = "ms-2 text-success";
+        status.textContent = "Directory & Leaderboard settings saved!";
+        setTimeout(() => { status.textContent = ""; }, 3000);
+      });
+    });
+  }
 
   // 3. Save Feature Modules
   document.getElementById("save-modules-btn").addEventListener("click", function() {
@@ -596,6 +1002,8 @@ document.addEventListener("DOMContentLoaded", function() {
     const interval = parseInt(document.getElementById("live-feed-interval").value) || 20;
     const limit = parseInt(document.getElementById("live-feed-limit").value) || 30;
     const tutorial = document.getElementById("tutorial-toggle").checked;
+    const globalDominance = document.getElementById("global-dominance-toggle") ? document.getElementById("global-dominance-toggle").checked : true;
+    const soundEffects = document.getElementById("sound-effects-toggle") ? document.getElementById("sound-effects-toggle").checked : true;
     const status = document.getElementById("modules-status");
 
     status.className = "ms-2 text-muted";
@@ -613,7 +1021,9 @@ document.addEventListener("DOMContentLoaded", function() {
         live_feed_subtitle: feedSubtitle,
         live_feed_interval: interval,
         live_feed_limit: limit,
-        tutorial_enabled: tutorial
+        tutorial_enabled: tutorial,
+        global_dominance_enabled: globalDominance,
+        sound_effects_enabled: soundEffects
       })
     })
     .then(r => r.json())
@@ -661,10 +1071,107 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
+  // Restore Default Templates
+  const defaultHomeTemplate = `<div class="matrix-terminal-card">
+  <div class="matrix-terminal-header">
+    <div>
+      <span>TERMINAL // CTF-NET HOST CONNECTION [ACTIVE]</span>
+    </div>
+  </div>
+
+  <div class="matrix-terminal-body">
+    <div class="matrix-typewriter-container" data-phrases="Wake up, Operative...&#10;The Matrix has you...&#10;Follow the white rabbit.&#10;Knock, knock, Hacker.">
+      <span id="matrix-typewriter-text"></span>
+      <span class="matrix-cursor" id="matrix-cursor"></span>
+    </div>
+
+    <div class="matrix-telemetry" id="matrix-telemetry" style="display: none;">
+      <div><span class="text-success">&gt;</span> STATUS: OPERATIONAL // 0-DAY MATRIX ACTIVE</div>
+      <div><span class="text-success">&gt;</span> PROTOCOL: GEOPOLITICAL CYBER WARFARE</div>
+      <div><span class="text-success">&gt;</span> NODES: REAL-TIME GLOBAL TARGETS LOADED</div>
+    </div>
+
+    <div class="matrix-hero-actions" id="matrix-actions" style="display: none;">
+      <a href="/challenges" class="matrix-btn-enter">
+        ENTER THE GRID
+      </a>
+      <a href="/scoreboard" class="matrix-btn-secondary">
+        SCOREBOARD
+      </a>
+      <a href="/login" class="matrix-btn-secondary matrix-auth-login">
+        LOGIN
+      </a>
+      <a href="/register" class="matrix-btn-secondary matrix-auth-register">
+        REGISTER
+      </a>
+    </div>
+
+    <div class="matrix-skip-hint" id="matrix-skip-hint">
+      [Click anywhere or press any key to skip sequence]
+    </div>
+  </div>
+</div>`;
+
+  const defaultCountdownTemplate = `<div class="hud-status-badge mb-3 text-center">
+  <span class="pulse-dot"></span>
+  <span>MISSION TELEMETRY // SECURE COUNTDOWN</span>
+</div>
+
+<h1 class="countdown-title mb-2 text-center">OPERATION COMMENCES IN</h1>
+<div class="countdown-subtitle text-muted mb-4 font-monospace text-center">SYNCHRONIZING WITH CTF MASTER CLOCK</div>
+
+<div id="countdown-clock-placeholder"></div>
+
+<!-- Mission Briefing Card -->
+<div class="row justify-content-center mb-5">
+  <div class="col-md-10 col-lg-8">
+    <div class="cyber-countdown-briefing-card text-start p-4">
+      <div class="briefing-header d-flex align-items-center mb-3">
+        <span class="font-display fw-bold text-success" style="font-size: 0.85rem; letter-spacing: 1.5px;">[ MISSION BRIEFING // RESTRICTED ACCESS ]</span>
+      </div>
+      <div class="briefing-content font-monospace text-light" style="font-size: 0.9rem; line-height: 1.7;">
+        <div>Operatives, satellite telemetry feeds are currently synchronizing with the central orbital command grid. Stand by for target activation and global node breach authorization.</div>
+        <div class="mb-0 text-muted small">// ALL CONNECTIONS MONITORED &bull; REPORT ANOMALIES TO COMMAND</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="d-flex justify-content-center gap-3">
+  <a href="/challenges" class="btn btn-outline-success font-monospace px-4 py-2">
+    <span>CHALLENGE GRID</span>
+  </a>
+  <a href="/" class="btn btn-outline-secondary font-monospace px-4 py-2">
+    <span>HEADQUARTERS</span>
+  </a>
+</div>`;
+
+  const restoreHomeBtn = document.getElementById("restore-home-default-btn");
+  if (restoreHomeBtn) {
+    restoreHomeBtn.addEventListener("click", function() {
+      if (confirm("Restore the default cyberpunk Matrix terminal template for the homepage?")) {
+        document.getElementById("matrix-home-content-input").value = defaultHomeTemplate;
+        document.getElementById("matrix-home-format").value = "html";
+      }
+    });
+  }
+
+  const restoreCountdownBtn = document.getElementById("restore-countdown-default-btn");
+  if (restoreCountdownBtn) {
+    restoreCountdownBtn.addEventListener("click", function() {
+      if (confirm("Restore the default cyber countdown template?")) {
+        document.getElementById("countdown-content-input").value = defaultCountdownTemplate;
+        document.getElementById("countdown-format").value = "html";
+      }
+    });
+  }
+
   // Reset Tutorial
   document.getElementById("reset-tutorial-btn").addEventListener("click", function() {
     try {
       localStorage.removeItem("world_theme_tutorial_completed_v1");
+      localStorage.removeItem("world_user_guide_enabled");
       alert("Tutorial completion flag reset! All players will receive the intel briefing again on /challenges.");
     } catch(e) {}
   });

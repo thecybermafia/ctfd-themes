@@ -1,5 +1,5 @@
-<nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
-  <div class="container">
+<nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top {{ 'navbar-compact' if Configs.world_navbar_compact_mode == 'icons' }}" data-compact-mode="{{ Configs.world_navbar_compact_mode or 'auto' }}">
+  <div class="container-fluid px-3 px-xl-4">
     <a href="{{ url_for('views.static_html', route='/') }}" class="navbar-brand">
       {% if Configs.ctf_logo %}
         <img
@@ -21,7 +21,7 @@
     </button>
 
     <div class="collapse navbar-collapse" id="base-navbars">
-      <ul class="navbar-nav me-auto">
+      <ul class="navbar-nav me-auto flex-row align-items-center flex-nowrap">
         {% for page in Plugins.user_menu_pages %}
           {% if page.route == '/referrals' or page.title == 'Referrals' %}
             {% if is_referral_accessible_for_user is defined and is_referral_accessible_for_user() %}
@@ -71,151 +71,166 @@
         </li>
       </ul>
 
-      <hr class="d-sm-flex d-md-flex d-lg-none">
-
-      <ul class="navbar-nav ms-md-auto d-block d-sm-flex d-md-flex">
+      <ul class="navbar-nav ms-auto flex-row align-items-center flex-nowrap navbar-right-cluster">
         {% if authed() %}
 
           {% if is_admin() %}
             <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('admin.view') }}">
-                <span data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% trans %}Admin Panel{% endtrans %}">
-                    <i class="fas fa-wrench d-none d-md-inline d-lg-none"></i>
-                </span>
-                <span class="d-sm-inline d-md-none d-lg-inline">
-                  <i class="fas fa-wrench pe-1"></i>
-                  {% trans %}Admin Panel{% endtrans %}
-                </span>
+              <a class="nav-link" href="{{ url_for('admin.view') }}" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% trans %}Admin Panel{% endtrans %}">
+                <i class="fas fa-wrench"></i>
+                <span class="nav-label">{% trans %}Admin Panel{% endtrans %}</span>
               </a>
             </li>
           {% endif %}
 
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('views.notifications') }}">
-              <span data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% trans %}Notifications{% endtrans %}">
-                <i class="fas fa-bell d-none d-md-inline d-lg-none"></i>
+            <a class="nav-link nav-link-notification" href="{{ url_for('views.notifications') }}" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% trans %}Notifications{% endtrans %}">
+              <span class="nav-icon-container position-relative d-inline-flex align-items-center">
+                <i class="fas fa-bell"></i>
+                <span x-data x-show="$store.unread_count > 0" x-text="$store.unread_count" class="badge rounded-pill bg-danger badge-notification" x-cloak style="display: none;"></span>
               </span>
-              <span class="d-sm-inline d-md-none d-lg-inline">
-                  <i class="fas fa-bell pe-1"></i>
-                  <span x-data x-show="$store.unread_count > 0" x-text="$store.unread_count" class="badge rounded-pill bg-danger badge-notification"></span>
-                  {% trans %}Notifications{% endtrans %}
-              </span>
+              <span class="nav-label">{% trans %}Notifications{% endtrans %}</span>
             </a>
           </li>
 
           {% if Configs.user_mode == "teams" %}
             <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('teams.private') }}">
-                <span data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% trans %}Team{% endtrans %}">
-                  <i class="fas fa-users d-none d-md-inline d-lg-none"></i>
-                </span>
-                <span class="d-sm-inline d-md-none d-lg-inline">
-                  <i class="fas fa-users pe-1"></i>
-                  {% trans %}Team{% endtrans %}
-                </span>
+              <a class="nav-link" href="{{ url_for('teams.private') }}" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% trans %}Team{% endtrans %}">
+                <i class="fas fa-users"></i>
+                <span class="nav-label">{% trans %}Team{% endtrans %}</span>
               </a>
             </li>
           {% endif %}
 
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('users.private') }}">
-              <span data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% trans %}Profile{% endtrans %}">
-                <i class="fas fa-user-circle d-none d-md-inline d-lg-none"></i>
-              </span>
-              <span class="d-sm-inline d-md-none d-lg-inline">
-                <i class="fas fa-user-circle pe-1"></i>
-                {% trans %}Profile{% endtrans %}
-              </span>
+            <a class="nav-link" href="{{ url_for('users.private') }}" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% trans %}Profile{% endtrans %}">
+              <i class="fas fa-user-circle"></i>
+              <span class="nav-label">{% trans %}Profile{% endtrans %}</span>
             </a>
           </li>
 
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('views.settings') }}">
-              <span data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% trans %}Settings{% endtrans %}">
-                <i class="fas fa-cogs d-none d-md-inline d-lg-none"></i>
-              </span>
-              <span class="d-sm-inline d-md-none d-lg-inline">
-                <i class="fas fa-cogs pe-1"></i>
-                {% trans %}Settings{% endtrans %}
-              </span>
+            <a class="nav-link" href="{{ url_for('views.settings') }}" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% trans %}Settings{% endtrans %}">
+              <i class="fas fa-cogs"></i>
+              <span class="nav-label">{% trans %}Settings{% endtrans %}</span>
             </a>
           </li>
 
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('auth.logout') }}">
-              <span data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% trans %}Logout{% endtrans %}">
-                <i class="fas fa-sign-out-alt d-none d-md-inline d-lg-none"></i>
-              </span>
-              <span class="d-sm-inline d-md-none d-lg-inline">
-                <i class="fas fa-sign-out-alt pe-1"></i><span class="d-lg-none">
-                  {% trans %}Logout{% endtrans %}
-                </span>
-              </span>
+            <a class="nav-link" href="{{ url_for('auth.logout') }}" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% trans %}Logout{% endtrans %}">
+              <i class="fas fa-sign-out-alt"></i>
             </a>
           </li>
         {% else %}
 
           {% if registration_visible() %}
             <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('auth.register') }}">
-                <span data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% trans %}Register{% endtrans %}">
-                  <i class="fas fa-user-plus d-none d-md-inline d-lg-none"></i>
-                </span>
-                <span class="d-sm-inline d-md-none d-lg-inline">
-                  <i class="fas fa-user-plus pe-1"></i>
-                  {% trans %}Register{% endtrans %}
-                </span>
+              <a class="nav-link" href="{{ url_for('auth.register') }}" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% trans %}Register{% endtrans %}">
+                <i class="fas fa-user-plus"></i>
+                <span class="nav-label">{% trans %}Register{% endtrans %}</span>
               </a>
             </li>
           {% endif %}
 
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('auth.login') }}">
-              <span data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% trans %}Login{% endtrans %}">
-                <i class="fas fa-sign-in-alt d-none d-md-inline d-lg-none"></i>
-              </span>
-              <span class="d-sm-inline d-md-none d-lg-inline">
-                <i class="fas fa-sign-in-alt pe-1"></i>
-                {% trans %}Login{% endtrans %}
-              </span>
+            <a class="nav-link" href="{{ url_for('auth.login') }}" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% trans %}Login{% endtrans %}">
+              <i class="fas fa-sign-in-alt"></i>
+              <span class="nav-label">{% trans %}Login{% endtrans %}</span>
             </a>
           </li>
         {% endif %}
 
+        {% if not Configs.world_hide_language_selector or Configs.world_hide_language_selector == 'false' %}
+        {% set curr_lang = get_locale() or 'en' %}
         <li class="nav-item dropdown">
-          <button class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="fas fa-language d-none d-md-inline"></i>
-            <span class="d-sm-inline d-md-none">
-              <i class="fas fa-language pe-1"></i>
-              {% trans %}Change language{% endtrans %}
-            </span>
+          <button class="nav-link dropdown-toggle lang-selector-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="{% trans %}Change language{% endtrans %}">
+            <i class="fas fa-globe me-1 text-success"></i>
+            <span class="font-monospace fw-bold">{{ curr_lang | upper }}</span>
           </button>
-          <form x-data="LanguageForm">
-            <ul class="dropdown-menu dropdown-menu-end">
-              {% set curr_lang = get_locale() %}
+          <form class="dropdown-menu dropdown-menu-end lang-dropdown-menu shadow-lg p-0" x-data="LanguageForm">
+            <div class="dropdown-header text-uppercase font-monospace px-3 py-2 border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center">
+              <span><i class="fas fa-globe me-1 text-success"></i> {% trans %}Languages{% endtrans %}</span>
+              <span class="badge bg-success text-dark font-monospace">{{ curr_lang | upper }}</span>
+            </div>
+            <div class="lang-list-container">
               {%- for lang in Languages.names.items() %}
-              <li>
-                  <span class="dropdown-item {{ 'bg-primary text-white' if (curr_lang == lang[0]) }}" @click="set" value="{{ lang[0] }}">
-                    {{ lang[1] }}
-                  </span>
-              </li>
+              <div class="dropdown-item d-flex align-items-center justify-content-between px-3 py-2 cursor-pointer {{ 'active-locale' if (curr_lang == lang[0]) }}" @click="set" value="{{ lang[0] }}" data-language="{{ lang[0] }}" onclick="document.cookie='language={{ lang[0] }};path=/;SameSite=Lax';localStorage.setItem('language','{{ lang[0] }}');if(window.CTFd&&CTFd.user&&CTFd.user.id){CTFd.fetch('/api/v1/users/me',{method:'PATCH',body:JSON.stringify({language:'{{ lang[0] }}'})}).finally(()=>location.reload());}else{location.reload();}">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge {{ 'bg-success text-dark' if (curr_lang == lang[0]) else 'bg-dark text-muted border border-secondary border-opacity-25' }} font-monospace" style="font-size: 0.7rem; min-width: 32px;" value="{{ lang[0] }}">{{ lang[0] | upper }}</span>
+                  <span class="locale-name font-monospace small" value="{{ lang[0] }}">{{ lang[1] }}</span>
+                </div>
+                {% if curr_lang == lang[0] %}
+                  <i class="fas fa-check text-success small" value="{{ lang[0] }}"></i>
+                {% endif %}
+              </div>
               {%- endfor %}
-            </ul>
+            </div>
           </form>
         </li>
+        {% endif %}
 
+        {% if not Configs.world_hide_theme_toggle or Configs.world_hide_theme_toggle == 'false' %}
         <li class="nav-item">
-          <button class="nav-link theme-switch" type="button">
-            <span data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% trans %}Toggle theme{% endtrans %}">
-              <i class="fas fa-sun d-none d-md-inline"></i>
-            </span>
-            <span class="d-sm-inline d-md-none">
-              <i class="fas fa-sun pe-1"></i>
-              {% trans %}Toggle theme{% endtrans %}
-            </span>
+          <button class="nav-link theme-switch" type="button" title="{% trans %}Toggle theme{% endtrans %}">
+            <i class="fas fa-sun"></i>
           </button>
         </li>
+        {% endif %}
       </ul>
     </div>
   </div>
 </nav>
+
+<script>
+(function() {
+  function checkNavbarOverflow() {
+    var navbar = document.querySelector('.navbar');
+    if (!navbar) return;
+    var mode = navbar.getAttribute('data-compact-mode') || 'auto';
+    if (mode === 'icons') {
+      navbar.classList.add('navbar-compact');
+      return;
+    }
+    if (mode === 'full') {
+      navbar.classList.remove('navbar-compact');
+      return;
+    }
+    // Auto mode: test if full fits
+    navbar.classList.remove('navbar-compact');
+    var container = navbar.querySelector('.container-fluid') || navbar.querySelector('.container');
+    var leftNav = navbar.querySelector('.navbar-nav.me-auto');
+    var rightNav = navbar.querySelector('.navbar-right-cluster');
+    var brand = navbar.querySelector('.navbar-brand');
+    if (!container || !leftNav || !rightNav) return;
+
+    var containerWidth = container.clientWidth;
+    var brandWidth = brand ? brand.offsetWidth : 120;
+    var leftWidth = leftNav.scrollWidth;
+    var rightWidth = rightNav.scrollWidth;
+    var totalRequired = brandWidth + leftWidth + rightWidth + 48;
+
+    if (totalRequired > containerWidth || window.innerWidth < 1180) {
+      navbar.classList.add('navbar-compact');
+    } else {
+      navbar.classList.remove('navbar-compact');
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkNavbarOverflow);
+  } else {
+    checkNavbarOverflow();
+  }
+  window.addEventListener('resize', checkNavbarOverflow);
+  window.addEventListener('load', checkNavbarOverflow);
+
+  // Initialize tooltips
+  document.addEventListener('DOMContentLoaded', function() {
+    if (window.bootstrap && bootstrap.Tooltip) {
+      document.querySelectorAll('.navbar [data-bs-toggle="tooltip"]').forEach(function(el) {
+        try { new bootstrap.Tooltip(el); } catch(e) {}
+      });
+    }
+  });
+})();
+</script>

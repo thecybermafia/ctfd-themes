@@ -13,7 +13,7 @@
 
     <div class="cyber-scoreboard-graph-card mb-4" x-data="ScoreboardDetail" @bracket-change.window="activeBracket=$event.detail; update();">
       <div class="cyber-graph-card-header d-flex justify-content-between align-items-center">
-        <span class="cyber-card-tag"><i class="fas fa-satellite-dish me-2"></i>[ ORBITAL SCOREBOARD TELEMETRY // TOP CONTENDERS ]</span>
+        <span class="cyber-card-tag"><i class="fas fa-satellite-dish me-2"></i>{{ Configs.world_header_scoreboard_graph or '[ ORBITAL SCOREBOARD TELEMETRY // TOP CONTENDERS ]' }}</span>
         <span class="cyber-card-status"><span class="status-pulse-dot"></span> LIVE TELEMETRY</span>
       </div>
       <div class="cyber-graph-card-body position-relative">
@@ -24,8 +24,49 @@
       </div>
     </div>
 
+    <!-- Global Dominance / Territory Control Standing Capsule -->
+    {% if Configs.world_global_dominance_enabled is not false and Configs.world_global_dominance_enabled != 'false' %}
+    <div class="cyber-scoreboard-graph-card mb-4" x-data="GlobalDominanceScoreboard()" x-init="init()" x-show="conquerors.length > 0">
+      <div class="cyber-graph-card-header d-flex justify-content-between align-items-center">
+        <span class="cyber-card-tag"><i class="fas fa-flag me-2"></i>{{ Configs.world_header_territory_dominance or '[ GEOPOLITICAL TERRITORY DOMINANCE // TOP CONQUERORS ]' }}</span>
+        <span class="cyber-card-status font-monospace" x-text="'GLOBAL OCCUPATION: ' + (worldConquestPct || 0) + '%'"></span>
+      </div>
+      <div class="cyber-graph-card-body p-3 font-monospace">
+        <div class="row g-3">
+          <template x-for="(c, idx) in conquerors.slice(0, {{ Configs.world_dominance_top_count or 4 }})" :key="c.account_id">
+            <div class="col-md-3 col-sm-6">
+              <div class="dominance-conqueror-card h-100 p-2">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="dominance-rank-badge" :class="'rank-' + (idx < 3 ? (idx + 1) : 'other')" x-text="'#' + (idx + 1)"></span>
+                    <a :href="c.account_url" class="fw-bold text-decoration-none text-truncate" style="max-width: 130px; color: var(--matrix-text-bright);" x-text="c.name"></a>
+                  </div>
+                  <span class="badge bg-success-subtle text-success font-monospace" x-text="c.territories_count + ' TERRITORIES'"></span>
+                </div>
+                <div class="dominance-bar-outer my-2">
+                  <div class="dominance-bar-inner" :style="'width: ' + c.dominance_pct + '%;'"></div>
+                </div>
+                <div class="d-flex justify-content-between small text-muted font-monospace">
+                  <span x-text="c.dominance_pct + '% CONTROL'"></span>
+                  <span x-text="c.first_bloods_count + ' FIRST BLOODS'"></span>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% set show_table = Configs.world_directory_table_view is not defined or Configs.world_directory_table_view is not false and Configs.world_directory_table_view != 'false' %}
+    {% set show_card = Configs.world_directory_card_view is not defined or Configs.world_directory_card_view is not false and Configs.world_directory_card_view != 'false' %}
+    {% set default_view = 'cards' if Configs.world_directory_default_view == 'card' else 'table' %}
+    {% if not show_table and not show_card %}
+      {% set show_table = true %}
+    {% endif %}
+
     <div id="scoreboard" class="row" x-data="ScoreboardList">
-      <template x-if="brackets.length && standings.length">
+      <template x-if="brackets && brackets.length && standings && standings.length">
         <div class="col-md-12 py-3">
           <nav class="nav nav-pills nav-fill">
             <button :class="{'nav-link': true, 'active': !activeBracket}" @click="activeBracket=null">{% trans %}All{% endtrans %}</button>
@@ -36,34 +77,114 @@
         </div>
       </template>
 
-      <div class="col-md-12" x-show="standings.length">
-        <table class="table table-striped align-middle scoreboard-table">
-          <thead>
-          <tr>
-            <th style="width: 10px">{% trans %}Place{% endtrans %}</th>
-            <th class="text-start ps-3">{{ get_mode_as_word(capitalize=True) }}</th>
-            <th>{% trans %}Score{% endtrans %}</th>
-          </tr>
-          </thead>
+      <div class="col-md-12" x-show="standings && standings.length" x-data="{ 
+        viewMode: {% if show_table and show_card %}localStorage.getItem('world_scoreboard_view') || '{{ default_view }}'{% elif show_card %}'cards'{% else %}'table'{% endif %}, 
+        setView(v) { this.viewMode = v; localStorage.setItem('world_scoreboard_view', v); } 
+      }">
+        
+        <!-- View Toggle Bar -->
+        <div class="cyber-view-toggle-bar">
+          <div class="font-monospace text-muted small">
+            <span class="text-success">{{ Configs.world_header_scoreboard_table or '[ OPERATIONAL LEADERBOARD ]' }}</span> // <span x-text="standings.length + ' CONTENDERS ACTIVE'"></span>
+          </div>
+          {% if show_table and show_card %}
+          <div class="cyber-view-toggle-group">
+            <button type="button" class="cyber-view-btn" :class="{ 'active': viewMode === 'table' }" @click="setView('table')">
+              <i class="fas fa-list me-1"></i> TABLE VIEW
+            </button>
+            <button type="button" class="cyber-view-btn" :class="{ 'active': viewMode === 'cards' }" @click="setView('cards')">
+              <i class="fas fa-th-large me-1"></i> LEADERBOARD CARDS
+            </button>
+          </div>
+          {% endif %}
+        </div>
 
-          <tbody>
-            <template x-for="(standing, index) in standings.filter(i => activeBracket ? i.bracket_id==activeBracket : true)">
-              <tr>
-                <th scope="row" class="text-center" x-text="index + 1"></th>
-                <td class="text-start">
-                  <a :href="standing.account_url" x-text="standing.name"></a>
-                  <template x-if="standing.bracket_name">
-                    <span class="badge bg-secondary ms-2" x-text="standing.bracket_name"></span>
-                  </template>
-                </td>
-                <td x-text="standing.score"></td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
+        {% if show_table %}
+        <!-- 1. Table View -->
+        <div x-show="viewMode === 'table'">
+          <table class="table table-striped align-middle scoreboard-table">
+            <thead>
+            <tr>
+              <th style="width: 10px">{% trans %}Place{% endtrans %}</th>
+              <th class="text-start ps-3">{{ get_mode_as_word(capitalize=True) }}</th>
+              <th>{% trans %}Score{% endtrans %}</th>
+            </tr>
+            </thead>
+
+            <tbody>
+              <template x-for="(standing, index) in ((standings || []).filter(i => activeBracket ? i.bracket_id==activeBracket : true))">
+                <tr>
+                  <th scope="row" class="text-center" x-text="index + 1"></th>
+                  <td class="text-start">
+                    {% if Configs.world_scoreboard_country_flags is not false and Configs.world_scoreboard_country_flags != 'false' %}
+                      <template x-if="standing.country">
+                        <span class="scoreboard-country-flag me-1" :title="standing.country">
+                          <i :class="'flag-' + standing.country.toLowerCase()"></i>
+                        </span>
+                      </template>
+                    {% endif %}
+                    <a :href="standing.account_url" x-text="standing.name"></a>
+                    <template x-if="standing.bracket_name">
+                      <span class="badge bg-secondary ms-2" x-text="standing.bracket_name"></span>
+                    </template>
+                  </td>
+                  <td x-text="standing.score"></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+
+        {% if show_card %}
+        <!-- 2. Leaderboard Dossier Cards View -->
+        <div class="cyber-dossier-grid" x-show="viewMode === 'cards'">
+          <template x-for="(standing, index) in ((standings || []).filter(i => activeBracket ? i.bracket_id==activeBracket : true))" :key="standing.account_id || index">
+            <div class="cyber-dossier-card">
+              <div>
+                <div class="cyber-dossier-header">
+                  <div>
+                    <div class="d-flex align-items-center gap-2">
+                      {% if Configs.world_scoreboard_country_flags is not false and Configs.world_scoreboard_country_flags != 'false' %}
+                        <template x-if="standing.country">
+                          <span class="scoreboard-country-flag" :title="standing.country">
+                            <i :class="'flag-' + standing.country.toLowerCase()"></i>
+                          </span>
+                        </template>
+                      {% endif %}
+                      <a :href="standing.account_url" class="cyber-dossier-name" x-text="standing.name"></a>
+                    </div>
+                    <template x-if="standing.bracket_name">
+                      <div class="mt-1">
+                        <span class="badge bg-secondary font-monospace small" x-text="standing.bracket_name"></span>
+                      </div>
+                    </template>
+                  </div>
+                  <div class="cyber-dossier-rank" :class="'rank-' + (index < 3 ? (index + 1) : 'other')" x-text="'#' + (index + 1)"></div>
+                </div>
+
+                <div class="cyber-dossier-meta my-3">
+                  <div class="d-flex align-items-baseline justify-content-between">
+                    <span class="font-monospace text-muted small">AGGREGATE SCORE</span>
+                    <span class="cyber-dossier-score" x-text="standing.score + ' PTS'"></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="cyber-dossier-footer">
+                <span class="font-monospace small text-muted">[ CONTENDER DOSSIER ]</span>
+                <a :href="standing.account_url" class="btn btn-sm btn-outline-success font-monospace py-0 px-2" style="font-size: 0.72rem;">
+                  PROFILE &rarr;
+                </a>
+              </div>
+            </div>
+          </template>
+        </div>
+        {% endif %}
+
       </div>
 
-      <div class="col-md-12" x-show="! standings.length">
+      <div class="col-md-12" x-show="!standings || !standings.length">
         <h3 class="text-center text-muted">{% trans %}Scoreboard is empty{% endtrans %}</h3>
       </div>
     </div>
@@ -72,53 +193,142 @@
 
 {% block scripts %}
   <script>
-    window.scoreboardChartOptions = {
-      backgroundColor: 'transparent',
-      textStyle: {
-        color: '#00e676',
-        fontFamily: "'Share Tech Mono', monospace"
-      },
-      title: {
+    window.GlobalDominanceScoreboard = function() {
+      return {
+        conquerors: [],
+        worldConquestPct: 0,
+        async init() {
+          try {
+            const res = await fetch("/api/v1/world/dominance");
+            if (res.ok) {
+              const json = await res.json();
+              if (json.success && json.data) {
+                this.conquerors = json.data.top_conquerors || [];
+                this.worldConquestPct = json.data.world_conquest_pct || 0;
+              }
+            }
+          } catch(e) {}
+        }
+      };
+    };
+
+    function getThemeChartOptions() {
+      const isLight = document.documentElement.getAttribute("data-bs-theme") === "light" ||
+                      document.body.classList.contains("theme-light");
+      if (isLight) {
+        return {
+          backgroundColor: 'transparent',
+          textStyle: {
+            color: '#1b5e20',
+            fontFamily: "'Share Tech Mono', monospace"
+          },
+          title: {
+            textStyle: {
+              color: '#1b5e20',
+              fontFamily: "'Orbitron', sans-serif",
+              fontSize: 16,
+              fontWeight: 700
+            }
+          },
+          legend: {
+            textStyle: {
+              color: '#424242',
+              fontFamily: "'Share Tech Mono', monospace"
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(255, 255, 255, 0.98)',
+            borderColor: '#2e7d32',
+            borderWidth: 1,
+            textStyle: {
+              color: '#212529',
+              fontFamily: "'Share Tech Mono', monospace"
+            }
+          },
+          xAxis: [{
+            axisLine: { lineStyle: { color: 'rgba(46, 125, 50, 0.5)' } },
+            splitLine: { lineStyle: { color: 'rgba(0, 0, 0, 0.08)' } },
+            axisLabel: { color: '#424242', fontFamily: "'Share Tech Mono', monospace" }
+          }],
+          yAxis: [{
+            axisLine: { lineStyle: { color: 'rgba(46, 125, 50, 0.5)' } },
+            splitLine: { lineStyle: { color: 'rgba(0, 0, 0, 0.08)' } },
+            axisLabel: { color: '#424242', fontFamily: "'Share Tech Mono', monospace" }
+          }],
+          dataZoom: [{
+            borderColor: 'rgba(46, 125, 50, 0.3)',
+            fillerColor: 'rgba(46, 125, 50, 0.1)',
+            handleStyle: { color: '#2e7d32' },
+            textStyle: { color: '#424242', fontFamily: "'Share Tech Mono', monospace" }
+          }],
+          color: ['#2e7d32', '#00838f', '#e65100', '#c2185b', '#6a1b9a', '#283593', '#00695c', '#ef6c00', '#0277bd', '#ad1457']
+        };
+      }
+      return {
+        backgroundColor: 'transparent',
         textStyle: {
           color: '#00e676',
-          fontFamily: "'Orbitron', sans-serif",
-          fontSize: 16,
-          fontWeight: 700
-        }
-      },
-      legend: {
-        textStyle: {
-          color: '#9e9e9e',
           fontFamily: "'Share Tech Mono', monospace"
+        },
+        title: {
+          textStyle: {
+            color: '#00e676',
+            fontFamily: "'Orbitron', sans-serif",
+            fontSize: 16,
+            fontWeight: 700
+          }
+        },
+        legend: {
+          textStyle: {
+            color: '#9e9e9e',
+            fontFamily: "'Share Tech Mono', monospace"
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(5, 13, 10, 0.95)',
+          borderColor: '#00e676',
+          borderWidth: 1,
+          textStyle: {
+            color: '#e0e0e0',
+            fontFamily: "'Share Tech Mono', monospace"
+          }
+        },
+        xAxis: [{
+          axisLine: { lineStyle: { color: 'rgba(0, 230, 118, 0.3)' } },
+          splitLine: { lineStyle: { color: 'rgba(0, 230, 118, 0.08)' } },
+          axisLabel: { color: '#9e9e9e', fontFamily: "'Share Tech Mono', monospace" }
+        }],
+        yAxis: [{
+          axisLine: { lineStyle: { color: 'rgba(0, 230, 118, 0.3)' } },
+          splitLine: { lineStyle: { color: 'rgba(0, 230, 118, 0.08)' } },
+          axisLabel: { color: '#9e9e9e', fontFamily: "'Share Tech Mono', monospace" }
+        }],
+        dataZoom: [{
+          borderColor: 'rgba(0, 230, 118, 0.3)',
+          fillerColor: 'rgba(0, 230, 118, 0.15)',
+          handleStyle: { color: '#00e676' },
+          textStyle: { color: '#9e9e9e', fontFamily: "'Share Tech Mono', monospace" }
+        }],
+        color: ['#00e676', '#00e5ff', '#ffeb3b', '#ff3d00', '#d500f9', '#76ff03', '#1de9b6', '#ff9100', '#00b0ff', '#f50057']
+      };
+    }
+
+    window.scoreboardChartOptions = getThemeChartOptions();
+
+    // Dynamically update ECharts when color mode switches
+    try {
+      const themeObserver = new MutationObserver(() => {
+        window.scoreboardChartOptions = getThemeChartOptions();
+        const chartEl = document.getElementById("score-graph");
+        if (chartEl && window.echarts) {
+          const chart = window.echarts.getInstanceByDom(chartEl);
+          if (chart) {
+            chart.setOption(getThemeChartOptions());
+          }
         }
-      },
-      tooltip: {
-        backgroundColor: 'rgba(5, 13, 10, 0.95)',
-        borderColor: '#00e676',
-        borderWidth: 1,
-        textStyle: {
-          color: '#e0e0e0',
-          fontFamily: "'Share Tech Mono', monospace"
-        }
-      },
-      xAxis: [{
-        axisLine: { lineStyle: { color: 'rgba(0, 230, 118, 0.3)' } },
-        splitLine: { lineStyle: { color: 'rgba(0, 230, 118, 0.08)' } },
-        axisLabel: { color: '#9e9e9e', fontFamily: "'Share Tech Mono', monospace" }
-      }],
-      yAxis: [{
-        axisLine: { lineStyle: { color: 'rgba(0, 230, 118, 0.3)' } },
-        splitLine: { lineStyle: { color: 'rgba(0, 230, 118, 0.08)' } },
-        axisLabel: { color: '#9e9e9e', fontFamily: "'Share Tech Mono', monospace" }
-      }],
-      dataZoom: [{
-        borderColor: 'rgba(0, 230, 118, 0.3)',
-        fillerColor: 'rgba(0, 230, 118, 0.15)',
-        handleStyle: { color: '#00e676' },
-        textStyle: { color: '#9e9e9e', fontFamily: "'Share Tech Mono', monospace" }
-      }],
-      color: ['#00e676', '#00e5ff', '#ffeb3b', '#ff3d00', '#d500f9', '#76ff03', '#1de9b6', '#ff9100', '#00b0ff', '#f50057']
-    };
+      });
+      themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-bs-theme"] });
+    } catch(e) {}
   </script>
   {{ Assets.js("assets/js/scoreboard.js") }}
 {% endblock %}

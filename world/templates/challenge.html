@@ -57,6 +57,17 @@
                 <span class="badge bg-success text-dark font-monospace fw-bold px-3 py-1">
                   {{ challenge.value }} PTS
                 </span>
+
+                {% set c_country = get_challenge_country_info(challenge.id) if get_challenge_country_info is defined else None %}
+                {% if c_country and (Configs.world_challenge_territory_badge is not defined or Configs.world_challenge_territory_badge is not false and Configs.world_challenge_territory_badge != 'false') %}
+                  <span class="challenge-territory-badge badge bg-dark border border-success font-monospace py-1 px-3 text-success shadow-sm">
+                    <i class="flag-{{ c_country.iso.lower() }} me-1"></i>
+                    <span>TERRITORY: {{ c_country.name }} [{{ c_country.iso }}]</span>
+                    {% if c_country.bonus_first > 0 %}
+                      <span class="text-warning ms-1">• FIRST BLOOD +{{ c_country.bonus_first }} PTS</span>
+                    {% endif %}
+                  </span>
+                {% endif %}
                 
                 {% if tags %}
                   {% block tags %}
@@ -69,12 +80,14 @@
                 {% if Configs.challenge_ratings == "public" %}
                   {% block ratings %}
                     {% if ratings %}
-                      <span class="badge bg-dark border border-secondary font-monospace text-muted py-1 px-2">
-                        <i class="fa-solid fa-thumbs-up text-success me-1"></i> {{ ratings.up }}
+                      <span class="challenge-ratings-badge badge font-monospace py-1 px-2 d-inline-flex align-items-center">
+                        <i class="fa-solid fa-thumbs-up rating-icon rating-icon-up text-success me-1"></i>
+                        <span class="rating-val rating-val-up">{{ ratings.up }}</span>
                         {% if ratings.count %}
-                          <span class="text-light ms-1">({{ ((ratings.up / (ratings.count)) * 100) | int }}%)</span>
+                          <span class="rating-pct text-light ms-1">({{ ((ratings.up / (ratings.count)) * 100) | int }}%)</span>
                         {% endif %}
-                        <i class="fa-solid fa-thumbs-down text-danger ms-2 me-1"></i> {{ ratings.down }}
+                        <i class="fa-solid fa-thumbs-down rating-icon rating-icon-down text-danger ms-2 me-1"></i>
+                        <span class="rating-val rating-val-down">{{ ratings.down }}</span>
                       </span>
                     {% endif %}
                   {% endblock %}
@@ -202,6 +215,7 @@
                 <template x-if="response">
                   {# This alert is re-used for all alerts, so it's important not to make it dismissible #}
                   <div class="alert text-center w-100 mt-3"
+                      x-init="if (response && response.data) { if (response.data.status === 'correct') { window.WorldAudio && window.WorldAudio.playSolve(); } else if (response.data.status === 'incorrect') { window.WorldAudio && window.WorldAudio.playError(); } }"
                       :class="{
                         'alert-success': response.data.status == 'correct',
                         'alert-info': response.data.status == 'already_solved',
@@ -332,10 +346,17 @@
                   </tr>
                   </thead>
                   <tbody id="challenge-solves-names">
-                  <template x-for="solve in solves">
-                    <tr>
+                  <template x-for="(solve, index) in solves">
+                    <tr :class="index === 0 ? 'table-warning-subtle' : ''">
                       <td>
                         <a :href="solve.account_url" x-text="solve.name"></a>
+                        {% if Configs.world_challenge_first_blood_badge is not defined or Configs.world_challenge_first_blood_badge is not false and Configs.world_challenge_first_blood_badge != 'false' %}
+                        <template x-if="index === 0">
+                          <span class="badge bg-warning text-dark font-monospace ms-2 shadow-sm">
+                            FIRST BLOOD
+                          </span>
+                        </template>
+                        {% endif %}
                       </td>
                       <td x-text="solve.date"></td>
                     </tr>

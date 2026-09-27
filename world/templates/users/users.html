@@ -38,77 +38,262 @@
 
     <hr>
 
-    <div class="row">
-      <div class="col-md-12">
-        <table class="table table-striped align-middle">
-          <thead>
-          <tr>
-            <th>{% trans %}User{% endtrans %}</th>
-            <th>{% trans %}Website{% endtrans %}</th>
-            <th class="d-none d-md-table-cell">{% trans %}Affiliation{% endtrans %}</th>
-            <th class="d-none d-md-table-cell">{% trans %}Country{% endtrans %}</th>
-          </tr>
-          </thead>
-          <tbody>
-          {% for user in users.items %}
-            <tr>
-              <td>
-                {% if scores_visible() %}
-                  <a href="{{ url_for('users.public', user_id=user.id) }}">
-                    {{ user.name | truncate(50) }}
-                  </a>
-                {% else %}
-                  <span>{{ user.name | truncate(50) }}</span>
-                {% endif %}
+    {% set show_table = Configs.world_directory_table_view is not defined or Configs.world_directory_table_view is not false and Configs.world_directory_table_view != 'false' %}
+    {% set show_card = Configs.world_directory_card_view is not defined or Configs.world_directory_card_view is not false and Configs.world_directory_card_view != 'false' %}
+    {% set default_view = Configs.world_directory_default_view if Configs.world_directory_default_view in ['table', 'card'] else 'table' %}
+    {% if not show_table and not show_card %}
+      {% set show_table = true %}
+    {% endif %}
 
-                {% if user.bracket_id %}
-                  <span class="badge bg-secondary ms-2">{{ user.bracket.name }}</span>
-                {% endif %}
-
-                {% if user.oauth_id %}
-                  <a href="https://majorleaguecyber.org/u/{{ user.name }}">
-                    <span class="badge bg-primary ms-2">{% trans %}Official{% endtrans %}</span>
-                  </a>
-                {% endif %}
-              </td>
-
-              <td class="text-center" style="width: 10px;">
-                {% if user.website and (user.website.startswith('http://') or user.website.startswith('https://')) %}
-                  <a href="{{ user.website }}" target="_blank" rel="noopener">
-                    <i
-                        class="fas fa-external-link-alt" data-toggle="tooltip" data-placement="top"
-                        title="{{ user.website }}"
-                    ></i>
-                  </a>
-                {% endif %}
-              </td>
-
-              <td class="d-none d-md-table-cell d-lg-table-cell">
-                {% if user.affiliation %}
-                  {% if user.affiliation | length > 50 %}
-                    <span data-toggle="tooltip" data-placement="top" title="{{ user.affiliation }}">
-									{% if user.affiliation %}{{ user.affiliation | truncate(50) }}{% endif %}
-								</span>
-                  {% else %}
-                    <span>
-									{% if user.affiliation %}{{ user.affiliation | truncate(50) }}{% endif %}
-								</span>
-                  {% endif %}
-                {% endif %}
-              </td>
-              <td class="d-none d-md-table-cell d-lg-table-cell">
-								<span>
-									{% if user.country %}
-                    <i class="flag-{{ user.country.lower() }}"></i>
-                    {{ lookup_country_code(user.country) }}
-                  {% endif %}
-								</span>
-              </td>
-            </tr>
-          {% endfor %}
-          </tbody>
-        </table>
+    <div x-data="{ 
+      viewMode: {% if show_table and show_card %}localStorage.getItem('world_users_view') || '{{ default_view }}'{% elif show_card %}'card'{% else %}'table'{% endif %}, 
+      setView(v) { this.viewMode = v; localStorage.setItem('world_users_view', v); } 
+    }">
+      
+      <!-- View Toggle Bar -->
+      <div class="cyber-view-toggle-bar">
+        <div class="font-monospace text-muted small">
+          <span class="text-success">{{ Configs.world_header_operative_directory or '[ OPERATIVE DIRECTORY ]' }}</span> // <span>{{ users.total }} OPERATIVES REGISTERED</span>
+        </div>
+        {% if show_table and show_card %}
+        <div class="cyber-view-toggle-group">
+          <button type="button" class="cyber-view-btn" :class="{ 'active': viewMode === 'table' }" @click="setView('table')">
+            <i class="fas fa-list me-1"></i> TABLE VIEW
+          </button>
+          <button type="button" class="cyber-view-btn" :class="{ 'active': viewMode === 'card' }" @click="setView('card')">
+            <i class="fas fa-th-large me-1"></i> OPERATIVE CARDS
+          </button>
+        </div>
+        {% endif %}
       </div>
+
+      {% if show_table %}
+      <!-- 1. Table View -->
+      <div class="row" x-show="viewMode === 'table'">
+        <div class="col-md-12">
+          <table class="table table-striped align-middle">
+            <thead>
+            <tr>
+              <th>{% trans %}User{% endtrans %}</th>
+              {% if get_config('user_mode') == 'teams' and (Configs.world_directory_show_team is not defined or Configs.world_directory_show_team is not false and Configs.world_directory_show_team != 'false') %}
+                <th>{% trans %}Team{% endtrans %}</th>
+              {% endif %}
+              {% if Configs.world_directory_show_website is not defined or Configs.world_directory_show_website is not false and Configs.world_directory_show_website != 'false' %}
+                <th>{% trans %}Website{% endtrans %}</th>
+              {% endif %}
+              {% if Configs.world_directory_show_affiliation is not defined or Configs.world_directory_show_affiliation is not false and Configs.world_directory_show_affiliation != 'false' %}
+                <th class="d-none d-md-table-cell">{% trans %}Affiliation{% endtrans %}</th>
+              {% endif %}
+              {% if Configs.world_directory_show_country is not defined or Configs.world_directory_show_country is not false and Configs.world_directory_show_country != 'false' %}
+                <th class="d-none d-md-table-cell">{% trans %}Country{% endtrans %}</th>
+              {% endif %}
+              {% if Configs.world_directory_show_custom_fields is not defined or Configs.world_directory_show_custom_fields is not false and Configs.world_directory_show_custom_fields != 'false' %}
+                {% set custom_cols = get_directory_custom_fields() %}
+                {% if custom_cols %}
+                  {% for field_name in custom_cols %}
+                    <th class="d-none d-lg-table-cell">{{ field_name }}</th>
+                  {% endfor %}
+                {% endif %}
+              {% endif %}
+            </tr>
+            </thead>
+            <tbody>
+            {% for user in users.items %}
+              <tr>
+                <td>
+                  {% if scores_visible() %}
+                    <a href="{{ url_for('users.public', user_id=user.id) }}" class="fw-bold">
+                      {{ user.name | truncate(50) }}
+                    </a>
+                  {% else %}
+                    <span class="fw-bold">{{ user.name | truncate(50) }}</span>
+                  {% endif %}
+
+                  {% if user.bracket_id %}
+                    <span class="badge bg-secondary ms-2">{{ user.bracket.name }}</span>
+                  {% endif %}
+
+                  {% if user.oauth_id %}
+                    <a href="https://majorleaguecyber.org/u/{{ user.name }}">
+                      <span class="badge bg-primary ms-2">{% trans %}Official{% endtrans %}</span>
+                    </a>
+                  {% endif %}
+                </td>
+
+                {% if get_config('user_mode') == 'teams' and (Configs.world_directory_show_team is not defined or Configs.world_directory_show_team is not false and Configs.world_directory_show_team != 'false') %}
+                  <td>
+                    {% if user.team %}
+                      <a href="{{ url_for('teams.public', team_id=user.team.id) }}" class="text-decoration-none">
+                        <i class="fas fa-users text-muted me-1"></i>{{ user.team.name | truncate(40) }}
+                      </a>
+                    {% else %}
+                      <span class="text-muted small font-monospace">-</span>
+                    {% endif %}
+                  </td>
+                {% endif %}
+
+                {% if Configs.world_directory_show_website is not defined or Configs.world_directory_show_website is not false and Configs.world_directory_show_website != 'false' %}
+                  <td class="text-center" style="width: 10px;">
+                    {% if user.website and (user.website.startswith('http://') or user.website.startswith('https://')) %}
+                      <a href="{{ user.website }}" target="_blank" rel="noopener">
+                        <i
+                            class="fas fa-external-link-alt" data-toggle="tooltip" data-placement="top"
+                            title="{{ user.website }}"
+                        ></i>
+                      </a>
+                    {% endif %}
+                  </td>
+                {% endif %}
+
+                {% if Configs.world_directory_show_affiliation is not defined or Configs.world_directory_show_affiliation is not false and Configs.world_directory_show_affiliation != 'false' %}
+                  <td class="d-none d-md-table-cell d-lg-table-cell">
+                    {% if user.affiliation %}
+                      {% if user.affiliation | length > 50 %}
+                        <span data-toggle="tooltip" data-placement="top" title="{{ user.affiliation }}">
+                          {{ user.affiliation | truncate(50) }}
+                        </span>
+                      {% else %}
+                        <span>
+                          {{ user.affiliation | truncate(50) }}
+                        </span>
+                      {% endif %}
+                    {% endif %}
+                  </td>
+                {% endif %}
+
+                {% if Configs.world_directory_show_country is not defined or Configs.world_directory_show_country is not false and Configs.world_directory_show_country != 'false' %}
+                  <td class="d-none d-md-table-cell d-lg-table-cell">
+                    <span>
+                      {% if user.country %}
+                        <i class="flag-{{ user.country.lower() }} me-1"></i>
+                        {{ lookup_country_code(user.country) }}
+                      {% endif %}
+                    </span>
+                  </td>
+                {% endif %}
+
+                {% if Configs.world_directory_show_custom_fields is not defined or Configs.world_directory_show_custom_fields is not false and Configs.world_directory_show_custom_fields != 'false' %}
+                  {% set custom_cols = get_directory_custom_fields() %}
+                  {% if custom_cols %}
+                    {% for field_name in custom_cols %}
+                      {% set val = get_custom_field_value(user, field_name) %}
+                      <td class="d-none d-lg-table-cell">
+                        {% if val %}
+                          <span class="badge bg-dark border border-secondary font-monospace">{{ val }}</span>
+                        {% else %}
+                          <span class="text-muted small font-monospace">-</span>
+                        {% endif %}
+                      </td>
+                    {% endfor %}
+                  {% endif %}
+                {% endif %}
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if show_card %}
+      <!-- 2. Cyber Dossier Cards View -->
+      <div class="cyber-dossier-grid" x-show="viewMode === 'card'">
+        {% for user in users.items %}
+          <div class="cyber-dossier-card">
+            <div>
+              <div class="cyber-dossier-header">
+                <div>
+                  {% if scores_visible() %}
+                    <a href="{{ url_for('users.public', user_id=user.id) }}" class="cyber-dossier-name">
+                      {{ user.name }}
+                    </a>
+                  {% else %}
+                    <span class="cyber-dossier-name">{{ user.name }}</span>
+                  {% endif %}
+                  <div class="mt-1 d-flex flex-wrap gap-1">
+                    {% if user.bracket_id %}
+                      <span class="badge bg-secondary font-monospace small">{{ user.bracket.name }}</span>
+                    {% endif %}
+                    {% if user.oauth_id %}
+                      <a href="https://majorleaguecyber.org/u/{{ user.name }}">
+                        <span class="badge bg-primary font-monospace small">Official</span>
+                      </a>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="cyber-dossier-rank">
+                  #{{ loop.index + (users.page - 1) * 50 }}
+                </div>
+              </div>
+
+              <div class="cyber-dossier-meta">
+                {% if get_config('user_mode') == 'teams' and (Configs.world_directory_show_team is not defined or Configs.world_directory_show_team is not false and Configs.world_directory_show_team != 'false') %}
+                  <div class="cyber-dossier-meta-item">
+                    <span class="cyber-dossier-meta-icon"><i class="fas fa-users"></i></span>
+                    {% if user.team %}
+                      <a href="{{ url_for('teams.public', team_id=user.team.id) }}" class="text-decoration-none text-light text-truncate">
+                        {{ user.team.name }}
+                      </a>
+                    {% else %}
+                      <span class="text-muted fst-italic">Solo Operative</span>
+                    {% endif %}
+                  </div>
+                {% endif %}
+
+                {% if (Configs.world_directory_show_country is not defined or Configs.world_directory_show_country is not false and Configs.world_directory_show_country != 'false') and user.country %}
+                  <div class="cyber-dossier-meta-item">
+                    <span class="cyber-dossier-meta-icon"><i class="flag-{{ user.country.lower() }}"></i></span>
+                    <span class="text-truncate">{{ lookup_country_code(user.country) }}</span>
+                  </div>
+                {% endif %}
+
+                {% if (Configs.world_directory_show_affiliation is not defined or Configs.world_directory_show_affiliation is not false and Configs.world_directory_show_affiliation != 'false') and user.affiliation %}
+                  <div class="cyber-dossier-meta-item">
+                    <span class="cyber-dossier-meta-icon"><i class="fas fa-building"></i></span>
+                    <span class="text-truncate" title="{{ user.affiliation }}">{{ user.affiliation }}</span>
+                  </div>
+                {% endif %}
+
+                {% if (Configs.world_directory_show_website is not defined or Configs.world_directory_show_website is not false and Configs.world_directory_show_website != 'false') and user.website %}
+                  <div class="cyber-dossier-meta-item">
+                    <span class="cyber-dossier-meta-icon"><i class="fas fa-globe"></i></span>
+                    <a href="{{ user.website }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-truncate" style="color: var(--matrix-green);">
+                      {{ user.website }}
+                    </a>
+                  </div>
+                {% endif %}
+
+                {% if (Configs.world_directory_show_custom_fields is not defined or Configs.world_directory_show_custom_fields is not false and Configs.world_directory_show_custom_fields != 'false') %}
+                  {% set custom_cols = get_directory_custom_fields() %}
+                  {% if custom_cols %}
+                    <div class="d-flex flex-wrap gap-1 mt-2 pt-2 border-top border-secondary border-opacity-25">
+                      {% for field_name in custom_cols %}
+                        {% set val = get_custom_field_value(user, field_name) %}
+                        {% if val %}
+                          <span class="badge bg-dark border border-secondary font-monospace small" title="{{ field_name }}: {{ val }}">
+                            {{ field_name }}: {{ val | truncate(25) }}
+                          </span>
+                        {% endif %}
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="cyber-dossier-footer">
+              <span class="font-monospace small text-muted">[ OPERATIVE DOSSIER ]</span>
+              {% if scores_visible() %}
+                <a href="{{ url_for('users.public', user_id=user.id) }}" class="btn btn-sm btn-outline-success font-monospace py-0 px-2" style="font-size: 0.72rem;">
+                  ENGAGE &rarr;
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
     </div>
 
     {% if users.pages > 1 %}

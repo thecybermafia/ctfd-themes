@@ -103,7 +103,12 @@
       resizeCanvas();
 
       function drawMatrix() {
-        ctx.fillStyle = "rgba(3, 8, 5, 0.08)";
+        const isLight = document.documentElement.getAttribute("data-bs-theme") === "light";
+        if (isLight) {
+          ctx.fillStyle = "rgba(248, 250, 252, 0.14)";
+        } else {
+          ctx.fillStyle = "rgba(3, 8, 5, 0.08)";
+        }
         ctx.fillRect(0, 0, width, height);
 
         ctx.font = fontSize + "px 'Courier New', monospace";
@@ -113,13 +118,23 @@
           const x = i * fontSize;
           const y = drops[i] * fontSize;
 
-          // Head of drop is bright white/emerald
-          ctx.fillStyle = "#e6fffa";
-          ctx.fillText(text, x, y);
+          if (isLight) {
+            // Head of drop is crisp slate
+            ctx.fillStyle = "#0f172a";
+            ctx.fillText(text, x, y);
 
-          // Body of drop is neon green
-          ctx.fillStyle = "#00e676";
-          ctx.fillText(text, x, y - fontSize);
+            // Body of drop is rich forest emerald
+            ctx.fillStyle = "#059669";
+            ctx.fillText(text, x, y - fontSize);
+          } else {
+            // Head of drop is bright white/emerald
+            ctx.fillStyle = "#e6fffa";
+            ctx.fillText(text, x, y);
+
+            // Body of drop is neon green
+            ctx.fillStyle = "#00e676";
+            ctx.fillText(text, x, y - fontSize);
+          }
 
           if (y > height && Math.random() > 0.975) {
             drops[i] = 0;

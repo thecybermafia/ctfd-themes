@@ -32,15 +32,15 @@
           'end': {{ Configs.end | tojson }},
           'themeSettings': {{ Configs.theme_settings | tojson }},
           'eventSounds': [
-            "/themes/core/static/sounds/notification.webm",
-            "/themes/core/static/sounds/notification.mp3",
+            "{{ url_for('views.themes_beta', theme='world', path='sounds/notification.webm') }}",
+            "{{ url_for('views.themes_beta', theme='world', path='sounds/notification.mp3') }}",
           ],
       }
   </script>
 
   {{ Configs.theme_header }}
 </head>
-<body data-section="world-theme">
+<body data-section="world-theme" data-cyber-palette="{{ Configs.world_accent_palette or 'matrix_green' }}">
 {% include "components/navbar.html" %}
 
 <main role="main">
@@ -52,17 +52,30 @@
 
 <footer class="footer">
   <div class="container text-center">
-    <a href="https://ctfd.io" class="text-secondary">
+    {% if Configs.world_footer_text %}
       <small class="text-muted">
-        {% trans %}Powered by CTFd{% endtrans %}
+        {% if Configs.world_footer_url %}
+          <a href="{{ Configs.world_footer_url }}" class="text-secondary" target="_blank" rel="noopener">
+            {{ Configs.world_footer_text | safe }}
+          </a>
+        {% else %}
+          {{ Configs.world_footer_text | safe }}
+        {% endif %}
       </small>
-    </a>
+    {% else %}
+      <a href="https://ctfd.io" class="text-secondary" target="_blank" rel="noopener">
+        <small class="text-muted">
+          {% trans %}Powered by CTFd{% endtrans %}
+        </small>
+      </a>
+    {% endif %}
   </div>
 </footer>
 
 {% include "components/notifications.html" %}
 
 {% block scripts %}
+  <script src="{{ url_for('views.themes_beta', theme='world', path='js/world-audio.js') }}?v={{ Configs.ctf_version or '2.3' }}"></script>
   {{ Assets.js("assets/js/page.js") }}
 {% endblock %}
 

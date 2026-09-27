@@ -41,84 +41,243 @@
 
     <hr>
 
-    <div class="row">
-      <div class="col-md-12">
-        <table class="table table-striped align-middle">
-          <thead>
-          <tr>
-            <th class="text-md-start">{% trans %}Team{% endtrans %}</th>
-            <th>{% trans %}Website{% endtrans %}</th>
-            <th class="d-none d-md-table-cell">{% trans %}Affiliation{% endtrans %}</th>
-            <th class="d-none d-md-table-cell">{% trans %}Country{% endtrans %}</th>
-          </tr>
-          </thead>
-          <tbody>
+    {% set show_table = Configs.world_directory_table_view is not defined or Configs.world_directory_table_view is not false and Configs.world_directory_table_view != 'false' %}
+    {% set show_card = Configs.world_directory_card_view is not defined or Configs.world_directory_card_view is not false and Configs.world_directory_card_view != 'false' %}
+    {% set default_view = Configs.world_directory_default_view if Configs.world_directory_default_view in ['table', 'card'] else 'table' %}
+    {% if not show_table and not show_card %}
+      {% set show_table = true %}
+    {% endif %}
 
-          {% for team in teams.items %}
+    <div x-data="{ 
+      viewMode: {% if show_table and show_card %}localStorage.getItem('world_teams_view') || '{{ default_view }}'{% elif show_card %}'card'{% else %}'table'{% endif %}, 
+      setView(v) { this.viewMode = v; localStorage.setItem('world_teams_view', v); } 
+    }">
+      
+      <!-- View Toggle Bar -->
+      <div class="cyber-view-toggle-bar">
+        <div class="font-monospace text-muted small">
+          <span class="text-success">{{ Configs.world_header_syndicate_directory or '[ SYNDICATE DIRECTORY ]' }}</span> // <span>{{ teams.total }} SYNDICATES REGISTERED</span>
+        </div>
+        {% if show_table and show_card %}
+        <div class="cyber-view-toggle-group">
+          <button type="button" class="cyber-view-btn" :class="{ 'active': viewMode === 'table' }" @click="setView('table')">
+            <i class="fas fa-list me-1"></i> TABLE VIEW
+          </button>
+          <button type="button" class="cyber-view-btn" :class="{ 'active': viewMode === 'card' }" @click="setView('card')">
+            <i class="fas fa-th-large me-1"></i> SYNDICATE CARDS
+          </button>
+        </div>
+        {% endif %}
+      </div>
+
+      {% if show_table %}
+      <!-- 1. Table View -->
+      <div class="row" x-show="viewMode === 'table'">
+        <div class="col-md-12">
+          <table class="table table-striped align-middle">
+            <thead>
             <tr>
-              <td>
-                {% if scores_visible() %}
-                  <a href="{{ url_for('teams.public', team_id=team.id) }}">{{ team.name | truncate(50) }}</a>
-                {% else %}
-                  <span>{{ team.name | truncate(50) }}</span>
+              <th class="text-md-start">{% trans %}Team{% endtrans %}</th>
+              {% if Configs.world_directory_show_website is not defined or Configs.world_directory_show_website is not false and Configs.world_directory_show_website != 'false' %}
+                <th>{% trans %}Website{% endtrans %}</th>
+              {% endif %}
+              {% if Configs.world_directory_show_affiliation is not defined or Configs.world_directory_show_affiliation is not false and Configs.world_directory_show_affiliation != 'false' %}
+                <th class="d-none d-md-table-cell">{% trans %}Affiliation{% endtrans %}</th>
+              {% endif %}
+              {% if Configs.world_directory_show_country is not defined or Configs.world_directory_show_country is not false and Configs.world_directory_show_country != 'false' %}
+                <th class="d-none d-md-table-cell">{% trans %}Country{% endtrans %}</th>
+              {% endif %}
+              {% if Configs.world_directory_show_custom_fields is not defined or Configs.world_directory_show_custom_fields is not false and Configs.world_directory_show_custom_fields != 'false' %}
+                {% set custom_cols = get_directory_custom_fields() %}
+                {% if custom_cols %}
+                  {% for field_name in custom_cols %}
+                    <th class="d-none d-lg-table-cell">{{ field_name }}</th>
+                  {% endfor %}
                 {% endif %}
+              {% endif %}
+            </tr>
+            </thead>
+            <tbody>
 
-                {% if team.bracket_id %}
-                  <span class="badge bg-secondary ms-2">{{ team.bracket.name }}</span>
-                {% endif %}
-
-                {% if team.oauth_id %}
-                  <a href="https://majorleaguecyber.org/t/{{ team.name }}">
-                    <span class="badge bg-primary ms-2">Official</span>
-                  </a>
-                {% endif %}
-              </td>
-
-              <td style="width: 10px;">
-                {% if team.website and (team.website.startswith('http://') or team.website.startswith('https://')) %}
-                  <a href="{{ team.website }}" target="_blank" rel="noopener">
-                    <i
-                        class="fas fa-external-link-alt"
-                        data-bs-toggle="tooltip"
-                        data-bs-placement="top"
-                        title="{{ team.website }}"
-                    ></i>
-                  </a>
-                {% endif %}
-              </td>
-
-              <td class="d-none d-md-table-cell">
-                {% if team.affiliation %}
-
-                  {% if team.affiliation | length > 50 %}
-                    <span data-bs-toggle="tooltip" data-bs-placement="top" title="{{ team.affiliation }}">
-                        {% if team.affiliation %}{{ team.affiliation | truncate(50) }}{% endif %}
-                    </span>
+            {% for team in teams.items %}
+              <tr>
+                <td>
+                  {% if scores_visible() %}
+                    <a href="{{ url_for('teams.public', team_id=team.id) }}" class="fw-bold">{{ team.name | truncate(50) }}</a>
                   {% else %}
-                    <span>
-                      {% if team.affiliation %}
-                        {{ team.affiliation | truncate(50) }}
-                      {% endif %}
-                    </span>
+                    <span class="fw-bold">{{ team.name | truncate(50) }}</span>
                   {% endif %}
 
-                {% endif %}
-              </td>
+                  {% if team.bracket_id %}
+                    <span class="badge bg-secondary ms-2">{{ team.bracket.name }}</span>
+                  {% endif %}
 
-              <td class="d-none d-md-table-cell">
-							<span>
-								{% if team.country %}
-                  <i class="flag-{{ team.country.lower() }}"></i>
-                  {{ lookup_country_code(team.country) }}
-                {% endif %}
-							</span>
-              </td>
-            </tr>
-          {% endfor %}
+                  {% if team.oauth_id %}
+                    <a href="https://majorleaguecyber.org/t/{{ team.name }}">
+                      <span class="badge bg-primary ms-2">Official</span>
+                    </a>
+                  {% endif %}
+                </td>
 
-          </tbody>
-        </table>
+                {% if Configs.world_directory_show_website is not defined or Configs.world_directory_show_website is not false and Configs.world_directory_show_website != 'false' %}
+                  <td style="width: 10px;">
+                    {% if team.website and (team.website.startswith('http://') or team.website.startswith('https://')) %}
+                      <a href="{{ team.website }}" target="_blank" rel="noopener">
+                        <i
+                            class="fas fa-external-link-alt"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            title="{{ team.website }}"
+                        ></i>
+                      </a>
+                    {% endif %}
+                  </td>
+                {% endif %}
+
+                {% if Configs.world_directory_show_affiliation is not defined or Configs.world_directory_show_affiliation is not false and Configs.world_directory_show_affiliation != 'false' %}
+                  <td class="d-none d-md-table-cell">
+                    {% if team.affiliation %}
+                      {% if team.affiliation | length > 50 %}
+                        <span data-bs-toggle="tooltip" data-bs-placement="top" title="{{ team.affiliation }}">
+                            {{ team.affiliation | truncate(50) }}
+                        </span>
+                      {% else %}
+                        <span>
+                          {{ team.affiliation | truncate(50) }}
+                        </span>
+                      {% endif %}
+                    {% endif %}
+                  </td>
+                {% endif %}
+
+                {% if Configs.world_directory_show_country is not defined or Configs.world_directory_show_country is not false and Configs.world_directory_show_country != 'false' %}
+                  <td class="d-none d-md-table-cell">
+                    <span>
+                      {% if team.country %}
+                        <i class="flag-{{ team.country.lower() }} me-1"></i>
+                        {{ lookup_country_code(team.country) }}
+                      {% endif %}
+                    </span>
+                  </td>
+                {% endif %}
+
+                {% if Configs.world_directory_show_custom_fields is not defined or Configs.world_directory_show_custom_fields is not false and Configs.world_directory_show_custom_fields != 'false' %}
+                  {% set custom_cols = get_directory_custom_fields() %}
+                  {% if custom_cols %}
+                    {% for field_name in custom_cols %}
+                      {% set val = get_custom_field_value(team, field_name) %}
+                      <td class="d-none d-lg-table-cell">
+                        {% if val %}
+                          <span class="badge bg-dark border border-secondary font-monospace">{{ val }}</span>
+                        {% else %}
+                          <span class="text-muted small font-monospace">-</span>
+                        {% endif %}
+                      </td>
+                    {% endfor %}
+                  {% endif %}
+                {% endif %}
+              </tr>
+            {% endfor %}
+
+            </tbody>
+          </table>
+        </div>
       </div>
+      {% endif %}
+
+      {% if show_card %}
+      <!-- 2. Cyber Syndicate Cards View -->
+      <div class="cyber-dossier-grid" x-show="viewMode === 'card'">
+        {% for team in teams.items %}
+          <div class="cyber-dossier-card">
+            <div>
+              <div class="cyber-dossier-header">
+                <div>
+                  {% if scores_visible() %}
+                    <a href="{{ url_for('teams.public', team_id=team.id) }}" class="cyber-dossier-name">
+                      {{ team.name }}
+                    </a>
+                  {% else %}
+                    <span class="cyber-dossier-name">{{ team.name }}</span>
+                  {% endif %}
+                  <div class="mt-1 d-flex flex-wrap gap-1">
+                    {% if team.bracket_id %}
+                      <span class="badge bg-secondary font-monospace small">{{ team.bracket.name }}</span>
+                    {% endif %}
+                    {% if team.oauth_id %}
+                      <a href="https://majorleaguecyber.org/t/{{ team.name }}">
+                        <span class="badge bg-primary font-monospace small">Official</span>
+                      </a>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="cyber-dossier-rank">
+                  #{{ loop.index + (teams.page - 1) * 50 }}
+                </div>
+              </div>
+
+              <div class="cyber-dossier-meta">
+                {% if team.members %}
+                  <div class="cyber-dossier-meta-item">
+                    <span class="cyber-dossier-meta-icon"><i class="fas fa-user-friends"></i></span>
+                    <span class="text-truncate">{{ team.members | length }} Operatives</span>
+                  </div>
+                {% endif %}
+
+                {% if (Configs.world_directory_show_country is not defined or Configs.world_directory_show_country is not false and Configs.world_directory_show_country != 'false') and team.country %}
+                  <div class="cyber-dossier-meta-item">
+                    <span class="cyber-dossier-meta-icon"><i class="flag-{{ team.country.lower() }}"></i></span>
+                    <span class="text-truncate">{{ lookup_country_code(team.country) }}</span>
+                  </div>
+                {% endif %}
+
+                {% if (Configs.world_directory_show_affiliation is not defined or Configs.world_directory_show_affiliation is not false and Configs.world_directory_show_affiliation != 'false') and team.affiliation %}
+                  <div class="cyber-dossier-meta-item">
+                    <span class="cyber-dossier-meta-icon"><i class="fas fa-building"></i></span>
+                    <span class="text-truncate" title="{{ team.affiliation }}">{{ team.affiliation }}</span>
+                  </div>
+                {% endif %}
+
+                {% if (Configs.world_directory_show_website is not defined or Configs.world_directory_show_website is not false and Configs.world_directory_show_website != 'false') and team.website %}
+                  <div class="cyber-dossier-meta-item">
+                    <span class="cyber-dossier-meta-icon"><i class="fas fa-globe"></i></span>
+                    <a href="{{ team.website }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-truncate" style="color: var(--matrix-green);">
+                      {{ team.website }}
+                    </a>
+                  </div>
+                {% endif %}
+
+                {% if (Configs.world_directory_show_custom_fields is not defined or Configs.world_directory_show_custom_fields is not false and Configs.world_directory_show_custom_fields != 'false') %}
+                  {% set custom_cols = get_directory_custom_fields() %}
+                  {% if custom_cols %}
+                    <div class="d-flex flex-wrap gap-1 mt-2 pt-2 border-top border-secondary border-opacity-25">
+                      {% for field_name in custom_cols %}
+                        {% set val = get_custom_field_value(team, field_name) %}
+                        {% if val %}
+                          <span class="badge bg-dark border border-secondary font-monospace small" title="{{ field_name }}: {{ val }}">
+                            {{ field_name }}: {{ val | truncate(25) }}
+                          </span>
+                        {% endif %}
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="cyber-dossier-footer">
+              <span class="font-monospace small text-muted">[ SYNDICATE PROFILE ]</span>
+              {% if scores_visible() %}
+                <a href="{{ url_for('teams.public', team_id=team.id) }}" class="btn btn-sm btn-outline-success font-monospace py-0 px-2" style="font-size: 0.72rem;">
+                  ENGAGE &rarr;
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
     </div>
 
     {% if teams.pages > 1 %}

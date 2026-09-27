@@ -10,8 +10,8 @@
     
     <!-- Tactical HUD Command Bar (Full width, sleek 3-cluster flex layout, zero collision) -->
     <div class="gameboard-hud-header">
-      <!-- Left Cluster: Title & Sector Filter -->
-      <div class="hud-left-cluster d-flex align-items-center gap-3">
+      <!-- Left Cluster: Title, Sector Filter & Target Finder -->
+      <div class="hud-left-cluster d-flex align-items-center gap-2">
         <h4 class="hud-title mb-0">
           <span class="pulse-dot me-2"></span>
           <span x-text="gridTitle || 'MATRIX COMMAND GRID'"></span>
@@ -23,6 +23,58 @@
               <option :value="cat" x-text="cat"></option>
             </template>
           </select>
+        </div>
+
+        <!-- Tactical Target Finder / Quick Search Bar -->
+        <div class="hud-search-wrapper" x-show="searchEnabled">
+          <div class="input-group input-group-sm hud-search-group">
+            <span class="input-group-text hud-search-icon">
+              <i class="fas fa-search"></i>
+            </span>
+            <input 
+              type="text" 
+              class="form-control hud-search-input font-monospace" 
+              placeholder="TARGET FINDER [/]"
+              x-model="searchQuery"
+              @input="onSearchInput()"
+              @keydown.escape="clearSearch()"
+              @keydown.enter="engageFirstSearchResult()"
+              title="Locate target challenges or countries (Shortcut: /)"
+            >
+            <button 
+              type="button" 
+              class="btn hud-search-clear-btn" 
+              x-show="searchQuery.length > 0"
+              @click="clearSearch()"
+              title="Clear Search"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <!-- Search Dropdown Results (Map View) -->
+          <div 
+            class="hud-search-dropdown font-monospace" 
+            x-show="searchDropdownOpen && searchResults.length > 0"
+            @click.outside="searchDropdownOpen = false"
+            x-transition
+          >
+            <template x-for="(res, idx) in searchResults" :key="idx">
+              <div 
+                class="hud-search-item" 
+                :class="{'search-item-breached': res.solved_by_me, 'search-item-hostile': !res.solved_by_me && res.status === 'captured_by_opponent'}"
+                @click="selectSearchResult(res)"
+              >
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="fw-bold search-item-name" x-text="res.name"></span>
+                  <span class="badge search-item-pts" x-text="res.value + ' PTS'"></span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center small text-muted mt-1">
+                  <span x-text="res.country_name ? (res.country_name + ' [' + res.country_iso + ']') : (res.category || 'NODE')"></span>
+                  <span class="search-item-status" :class="res.solved_by_me ? 'text-success' : (res.status === 'captured_by_opponent' ? 'text-danger' : 'text-cyan')" x-text="res.solved_by_me ? 'SOLVED' : (res.status === 'captured_by_opponent' ? 'HOSTILE' : 'READY')"></span>
+                </div>
+              </div>
+            </template>
+          </div>
         </div>
       </div>
 
@@ -287,7 +339,7 @@
     </div>
 
     <!-- Tabular List View (Offset to guarantee NO collision with fixed HUD header or live feed) -->
-    <div class="container py-4 challenges-list-container" :class="{ 'with-livefeed': liveFeedEnabled && liveFeedOpen && !liveFeedMinimized }" x-show="listView">
+    <div class="container-fluid px-4 py-4 challenges-list-container" :class="{ 'with-livefeed': liveFeedEnabled && liveFeedOpen && !liveFeedMinimized }" x-show="listView">
       
 
       <div class="row">

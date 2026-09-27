@@ -292,6 +292,118 @@ def get_world_live_feed():
 
     return jsonify({"success": True, "data": feed})
 
+@world_bp.route("/api/v1/world/dominance", methods=["GET"])
+def get_world_dominance():
+    """Returns geopolitical territory conquest and dominance rankings"""
+    if not is_admin() and get_config("score_visibility") == "admins":
+        return jsonify({"success": True, "data": {"total_territories": 0, "conquered_territories": 0, "unclaimed_territories": 0, "world_conquest_pct": 0, "top_conquerors": [], "my_dominance": None}})
+
+    chal_to_iso, iso_to_chal = get_country_mappings()
+    countries_data = load_countries_data()
+
+    active_chal_ids = list(chal_to_iso.keys())
+    if not active_chal_ids:
+        return jsonify({"success": True, "data": {"total_territories": 0, "conquered_territories": 0, "unclaimed_territories": 0, "world_conquest_pct": 0, "top_conquerors": [], "my_dominance": None}})
+
+    chals = Challenges.query.filter(Challenges.id.in_(active_chal_ids)).all()
+    if not is_admin():
+        active_chal_ids = [c.id for c in chals if c.state != "hidden"]
+    else:
+        active_chal_ids = [c.id for c in chals]
+
+    total_territories = len(active_chal_ids)
+    if total_territories == 0:
+        return jsonify({"success": True, "data": {"total_territories": 0, "conquered_territories": 0, "unclaimed_territories": 0, "world_conquest_pct": 0, "top_conquerors": [], "my_dominance": None}})
+
+    solves = Solves.query.filter(Solves.challenge_id.in_(active_chal_ids)).order_by(Solves.date.asc()).all()
+
+    is_teams = get_config("user_mode") == "teams"
+    account_territories = {}
+    account_names = {}
+    account_countries = {}
+    challenge_first_bloods = {}
+
+    for s in solves:
+        acc_id = s.team_id if is_teams else s.user_id
+        acc_obj = s.team if is_teams else s.user
+        if not acc_obj or acc_obj.banned or acc_obj.hidden:
+            continue
+
+        if acc_id not in account_territories:
+            account_territories[acc_id] = set()
+            account_names[acc_id] = acc_obj.name
+            account_countries[acc_id] = []
+
+        if s.challenge_id not in account_territories[acc_id]:
+            account_territories[acc_id].add(s.challenge_id)
+            iso = chal_to_iso.get(s.challenge_id)
+            if iso:
+                c_name = countries_data.get(iso, {}).get("name", iso)
+                account_countries[acc_id].append({"iso": iso, "name": c_name})
+
+        if s.challenge_id not in challenge_first_bloods:
+            challenge_first_bloods[s.challenge_id] = acc_id
+
+    conquered_territories = len(challenge_first_bloods)
+    unclaimed_territories = max(0, total_territories - conquered_territories)
+    world_conquest_pct = round((conquered_territories / total_territories) * 100, 1) if total_territories > 0 else 0
+
+    top_conquerors = []
+    for acc_id, chal_set in account_territories.items():
+        t_count = len(chal_set)
+        dom_pct = round((t_count / total_territories) * 100, 1)
+        fb_count = sum(1 for cid, holder in challenge_first_bloods.items() if holder == acc_id)
+        acc_url = f"/teams/{acc_id}" if is_teams else f"/users/{acc_id}"
+
+        top_conquerors.append({
+            "account_id": acc_id,
+            "name": account_names[acc_id],
+            "account_url": acc_url,
+            "territories_count": t_count,
+            "dominance_pct": dom_pct,
+            "first_bloods_count": fb_count,
+            "countries": account_countries[acc_id][:12],
+        })
+
+    top_conquerors.sort(key=lambda x: (x["territories_count"], x["first_bloods_count"]), reverse=True)
+
+    for idx, item in enumerate(top_conquerors):
+        item["rank"] = idx + 1
+
+    my_dominance = None
+    if authed():
+        my_team = get_current_team()
+        my_user = get_current_user()
+        my_acc_id = my_team.id if is_teams and my_team else (my_user.id if my_user else None)
+        if my_acc_id:
+            for item in top_conquerors:
+                if item["account_id"] == my_acc_id:
+                    my_dominance = item
+                    break
+            if not my_dominance:
+                my_dominance = {
+                    "account_id": my_acc_id,
+                    "name": my_team.name if is_teams and my_team else (my_user.name if my_user else "Operative"),
+                    "territories_count": 0,
+                    "dominance_pct": 0.0,
+                    "first_bloods_count": 0,
+                    "rank": len(top_conquerors) + 1,
+                    "countries": []
+                }
+
+    top_count = int(get_config("world_dominance_top_count", 4) or 4)
+    return jsonify({
+        "success": True,
+        "data": {
+            "total_territories": total_territories,
+            "conquered_territories": conquered_territories,
+            "unclaimed_territories": unclaimed_territories,
+            "world_conquest_pct": world_conquest_pct,
+            "top_conquerors": top_conquerors[:max(top_count, 10)],
+            "my_dominance": my_dominance
+        }
+    })
+
 @world_bp.route("/api/v1/world/challenges/<int:challenge_id>/country", methods=["GET", "POST", "DELETE"])
 @admins_only
 def manage_challenge_country(challenge_id):
@@ -408,7 +520,12 @@ def manage_challenge_country(challenge_id):
     })
 
 def get_bool_config(key, default=False):
-    val = get_config(key, default)
+    try:
+        from CTFd.models import Configs
+        c = Configs.query.filter_by(key=key).first()
+        val = c.value if c is not None else get_config(key, default)
+    except Exception:
+        val = get_config(key, default)
     if isinstance(val, bool):
         return val
     if isinstance(val, str):
@@ -481,6 +598,33 @@ def admin_theme_settings():
         "countdown_format": get_config("world_countdown_format", "html"),
         "countdown_content": get_config("world_countdown_content", ""),
         "countdown_redirect": get_bool_config("world_countdown_redirect", True),
+        "scoreboard_country_flags": get_bool_config("world_scoreboard_country_flags", True),
+        "challenge_territory_badge": get_bool_config("world_challenge_territory_badge", True),
+        "challenge_first_blood_badge": get_bool_config("world_challenge_first_blood_badge", True),
+        "directory_show_team": get_bool_config("world_directory_show_team", True),
+        "directory_show_website": get_bool_config("world_directory_show_website", True),
+        "directory_show_affiliation": get_bool_config("world_directory_show_affiliation", True),
+        "directory_show_country": get_bool_config("world_directory_show_country", True),
+        "directory_show_custom_fields": get_bool_config("world_directory_show_custom_fields", True),
+        "directory_custom_fields": get_config("world_directory_custom_fields", ""),
+        "directory_table_view": get_bool_config("world_directory_table_view", True),
+        "directory_card_view": get_bool_config("world_directory_card_view", True),
+        "directory_default_view": get_config("world_directory_default_view", "table"),
+        "search_enabled": get_bool_config("world_search_enabled", True),
+        "global_dominance_enabled": get_bool_config("world_global_dominance_enabled", True),
+        "accent_palette": get_config("world_accent_palette", "matrix_green"),
+        "sound_effects_enabled": get_bool_config("world_sound_effects_enabled", True),
+        "footer_text": get_config("world_footer_text", ""),
+        "footer_url": get_config("world_footer_url", ""),
+        "dominance_top_count": int(get_config("world_dominance_top_count", 4) or 4),
+        "header_operative_directory": get_config("world_header_operative_directory", "[ OPERATIVE DIRECTORY ]"),
+        "header_syndicate_directory": get_config("world_header_syndicate_directory", "[ SYNDICATE DIRECTORY ]"),
+        "header_scoreboard_graph": get_config("world_header_scoreboard_graph", "[ ORBITAL SCOREBOARD TELEMETRY // TOP CONTENDERS ]"),
+        "header_territory_dominance": get_config("world_header_territory_dominance", "[ GEOPOLITICAL TERRITORY DOMINANCE // TOP CONQUERORS ]"),
+        "header_scoreboard_table": get_config("world_header_scoreboard_table", "[ OPERATIONAL LEADERBOARD ]"),
+        "hide_language_selector": get_bool_config("world_hide_language_selector", False),
+        "hide_theme_toggle": get_bool_config("world_hide_theme_toggle", False),
+        "navbar_compact_mode": get_config("world_navbar_compact_mode", "auto"),
     }
 
     return render_template(
@@ -533,6 +677,44 @@ def world_settings_api():
                 "countdown_format": get_config("world_countdown_format", "html"),
                 "countdown_content": get_config("world_countdown_content", ""),
                 "countdown_redirect": get_bool_config("world_countdown_redirect", True),
+                "scoreboard_country_flags": get_bool_config("world_scoreboard_country_flags", True),
+                "challenge_territory_badge": get_bool_config("world_challenge_territory_badge", True),
+                "challenge_first_blood_badge": get_bool_config("world_challenge_first_blood_badge", True),
+                "directory_show_team": get_bool_config("world_directory_show_team", True),
+                "directory_show_website": get_bool_config("world_directory_show_website", True),
+                "directory_show_affiliation": get_bool_config("world_directory_show_affiliation", True),
+                "directory_show_country": get_bool_config("world_directory_show_country", True),
+                "directory_show_custom_fields": get_bool_config("world_directory_show_custom_fields", True),
+                "directory_custom_fields": get_config("world_directory_custom_fields", ""),
+                "directory_table_view": get_bool_config("world_directory_table_view", True),
+                "directory_card_view": get_bool_config("world_directory_card_view", True),
+                "directory_default_view": get_config("world_directory_default_view", "table"),
+                "search_enabled": get_bool_config("world_search_enabled", True),
+                "global_dominance_enabled": get_bool_config("world_global_dominance_enabled", True),
+                "accent_palette": get_config("world_accent_palette", "matrix_green"),
+                "sound_effects_enabled": get_bool_config("world_sound_effects_enabled", True),
+                "footer_text": get_config("world_footer_text", ""),
+                "world_footer_text": get_config("world_footer_text", ""),
+                "footer_url": get_config("world_footer_url", ""),
+                "world_footer_url": get_config("world_footer_url", ""),
+                "dominance_top_count": int(get_config("world_dominance_top_count", 4) or 4),
+                "world_dominance_top_count": int(get_config("world_dominance_top_count", 4) or 4),
+                "header_operative_directory": get_config("world_header_operative_directory", "[ OPERATIVE DIRECTORY ]"),
+                "world_header_operative_directory": get_config("world_header_operative_directory", "[ OPERATIVE DIRECTORY ]"),
+                "header_syndicate_directory": get_config("world_header_syndicate_directory", "[ SYNDICATE DIRECTORY ]"),
+                "world_header_syndicate_directory": get_config("world_header_syndicate_directory", "[ SYNDICATE DIRECTORY ]"),
+                "header_scoreboard_graph": get_config("world_header_scoreboard_graph", "[ ORBITAL SCOREBOARD TELEMETRY // TOP CONTENDERS ]"),
+                "world_header_scoreboard_graph": get_config("world_header_scoreboard_graph", "[ ORBITAL SCOREBOARD TELEMETRY // TOP CONTENDERS ]"),
+                "header_territory_dominance": get_config("world_header_territory_dominance", "[ GEOPOLITICAL TERRITORY DOMINANCE // TOP CONQUERORS ]"),
+                "world_header_territory_dominance": get_config("world_header_territory_dominance", "[ GEOPOLITICAL TERRITORY DOMINANCE // TOP CONQUERORS ]"),
+                "header_scoreboard_table": get_config("world_header_scoreboard_table", "[ OPERATIONAL LEADERBOARD ]"),
+                "world_header_scoreboard_table": get_config("world_header_scoreboard_table", "[ OPERATIONAL LEADERBOARD ]"),
+                "hide_language_selector": get_bool_config("world_hide_language_selector", False),
+                "world_hide_language_selector": get_bool_config("world_hide_language_selector", False),
+                "hide_theme_toggle": get_bool_config("world_hide_theme_toggle", False),
+                "world_hide_theme_toggle": get_bool_config("world_hide_theme_toggle", False),
+                "navbar_compact_mode": get_config("world_navbar_compact_mode", "auto"),
+                "world_navbar_compact_mode": get_config("world_navbar_compact_mode", "auto"),
             }
         })
 
@@ -620,7 +802,113 @@ def world_settings_api():
     if "countdown_redirect" in data:
         set_config("world_countdown_redirect", "true" if data.get("countdown_redirect") in (True, "true", "on", 1) else "false")
 
-    return jsonify({"success": True, "message": "Theme Settings updated successfully!"})
+    if "scoreboard_country_flags" in data:
+        set_config("world_scoreboard_country_flags", "true" if data.get("scoreboard_country_flags") in (True, "true", "on", 1) else "false")
+    if "challenge_territory_badge" in data:
+        set_config("world_challenge_territory_badge", "true" if data.get("challenge_territory_badge") in (True, "true", "on", 1) else "false")
+    if "challenge_first_blood_badge" in data:
+        set_config("world_challenge_first_blood_badge", "true" if data.get("challenge_first_blood_badge") in (True, "true", "on", 1) else "false")
+    if "directory_show_team" in data:
+        set_config("world_directory_show_team", "true" if data.get("directory_show_team") in (True, "true", "on", 1) else "false")
+    if "directory_show_website" in data:
+        set_config("world_directory_show_website", "true" if data.get("directory_show_website") in (True, "true", "on", 1) else "false")
+    if "directory_show_affiliation" in data:
+        set_config("world_directory_show_affiliation", "true" if data.get("directory_show_affiliation") in (True, "true", "on", 1) else "false")
+    if "directory_show_country" in data:
+        set_config("world_directory_show_country", "true" if data.get("directory_show_country") in (True, "true", "on", 1) else "false")
+    if "directory_show_custom_fields" in data:
+        set_config("world_directory_show_custom_fields", "true" if data.get("directory_show_custom_fields") in (True, "true", "on", 1) else "false")
+    if "directory_custom_fields" in data:
+        set_config("world_directory_custom_fields", (data.get("directory_custom_fields") or "").strip())
+    if "directory_table_view" in data:
+        set_config("world_directory_table_view", "true" if data.get("directory_table_view") in (True, "true", "on", 1) else "false")
+    if "directory_card_view" in data:
+        set_config("world_directory_card_view", "true" if data.get("directory_card_view") in (True, "true", "on", 1) else "false")
+    if "directory_default_view" in data:
+        set_config("world_directory_default_view", "card" if data.get("directory_default_view") == "card" else "table")
+    if "search_enabled" in data:
+        set_config("world_search_enabled", "true" if data.get("search_enabled") in (True, "true", "on", 1) else "false")
+    if "global_dominance_enabled" in data:
+        set_config("world_global_dominance_enabled", "true" if data.get("global_dominance_enabled") in (True, "true", "on", 1) else "false")
+    if "accent_palette" in data:
+        palette = (data.get("accent_palette") or "matrix_green").strip().lower()
+        if palette not in ("matrix_green", "cyberpunk_cyan", "solar_amber", "hostile_crimson"):
+            palette = "matrix_green"
+        set_config("world_accent_palette", palette)
+    if "sound_effects_enabled" in data:
+        set_config("world_sound_effects_enabled", "true" if data.get("sound_effects_enabled") in (True, "true", "on", 1) else "false")
+    if "footer_text" in data or "world_footer_text" in data:
+        val = data.get("world_footer_text") if "world_footer_text" in data else data.get("footer_text")
+        set_config("world_footer_text", (val or "").strip())
+    if "footer_url" in data or "world_footer_url" in data:
+        val = data.get("world_footer_url") if "world_footer_url" in data else data.get("footer_url")
+        set_config("world_footer_url", (val or "").strip())
+    if "dominance_top_count" in data or "world_dominance_top_count" in data:
+        val = data.get("world_dominance_top_count") if "world_dominance_top_count" in data else data.get("dominance_top_count")
+        try:
+            val_int = max(1, min(20, int(val or 4)))
+            set_config("world_dominance_top_count", str(val_int))
+        except (ValueError, TypeError):
+            pass
+    if "header_operative_directory" in data or "world_header_operative_directory" in data:
+        val = data.get("world_header_operative_directory") if "world_header_operative_directory" in data else data.get("header_operative_directory")
+        set_config("world_header_operative_directory", (val or "[ OPERATIVE DIRECTORY ]").strip())
+    if "header_syndicate_directory" in data or "world_header_syndicate_directory" in data:
+        val = data.get("world_header_syndicate_directory") if "world_header_syndicate_directory" in data else data.get("header_syndicate_directory")
+        set_config("world_header_syndicate_directory", (val or "[ SYNDICATE DIRECTORY ]").strip())
+    if "header_scoreboard_graph" in data or "world_header_scoreboard_graph" in data:
+        val = data.get("world_header_scoreboard_graph") if "world_header_scoreboard_graph" in data else data.get("header_scoreboard_graph")
+        set_config("world_header_scoreboard_graph", (val or "[ ORBITAL SCOREBOARD TELEMETRY // TOP CONTENDERS ]").strip())
+    if "header_territory_dominance" in data or "world_header_territory_dominance" in data:
+        val = data.get("world_header_territory_dominance") if "world_header_territory_dominance" in data else data.get("header_territory_dominance")
+        set_config("world_header_territory_dominance", (val or "[ GEOPOLITICAL TERRITORY DOMINANCE // TOP CONQUERORS ]").strip())
+    if "header_scoreboard_table" in data or "world_header_scoreboard_table" in data:
+        val = data.get("world_header_scoreboard_table") if "world_header_scoreboard_table" in data else data.get("header_scoreboard_table")
+        set_config("world_header_scoreboard_table", (val or "[ OPERATIONAL LEADERBOARD ]").strip())
+    if "hide_language_selector" in data or "world_hide_language_selector" in data:
+        val = data.get("world_hide_language_selector") if "world_hide_language_selector" in data else data.get("hide_language_selector")
+        set_config("world_hide_language_selector", "true" if val in (True, "true", "on", 1) else "false")
+    if "hide_theme_toggle" in data or "world_hide_theme_toggle" in data:
+        val = data.get("world_hide_theme_toggle") if "world_hide_theme_toggle" in data else data.get("hide_theme_toggle")
+        set_config("world_hide_theme_toggle", "true" if val in (True, "true", "on", 1) else "false")
+    if "navbar_compact_mode" in data or "world_navbar_compact_mode" in data:
+        val = data.get("world_navbar_compact_mode") if "world_navbar_compact_mode" in data else data.get("navbar_compact_mode")
+        set_config("world_navbar_compact_mode", (val or "auto").strip().lower())
+
+    try:
+        from CTFd.cache import clear_config
+        clear_config()
+    except Exception:
+        pass
+
+    return jsonify({
+        "success": True, 
+        "message": "Theme Settings updated successfully!",
+        "data": {
+            "footer_text": get_config("world_footer_text", ""),
+            "world_footer_text": get_config("world_footer_text", ""),
+            "footer_url": get_config("world_footer_url", ""),
+            "world_footer_url": get_config("world_footer_url", ""),
+            "dominance_top_count": int(get_config("world_dominance_top_count", 4) or 4),
+            "world_dominance_top_count": int(get_config("world_dominance_top_count", 4) or 4),
+            "header_operative_directory": get_config("world_header_operative_directory", "[ OPERATIVE DIRECTORY ]"),
+            "world_header_operative_directory": get_config("world_header_operative_directory", "[ OPERATIVE DIRECTORY ]"),
+            "header_syndicate_directory": get_config("world_header_syndicate_directory", "[ SYNDICATE DIRECTORY ]"),
+            "world_header_syndicate_directory": get_config("world_header_syndicate_directory", "[ SYNDICATE DIRECTORY ]"),
+            "header_scoreboard_graph": get_config("world_header_scoreboard_graph", "[ ORBITAL SCOREBOARD TELEMETRY // TOP CONTENDERS ]"),
+            "world_header_scoreboard_graph": get_config("world_header_scoreboard_graph", "[ ORBITAL SCOREBOARD TELEMETRY // TOP CONTENDERS ]"),
+            "header_territory_dominance": get_config("world_header_territory_dominance", "[ GEOPOLITICAL TERRITORY DOMINANCE // TOP CONQUERORS ]"),
+            "world_header_territory_dominance": get_config("world_header_territory_dominance", "[ GEOPOLITICAL TERRITORY DOMINANCE // TOP CONQUERORS ]"),
+            "header_scoreboard_table": get_config("world_header_scoreboard_table", "[ OPERATIONAL LEADERBOARD ]"),
+            "world_header_scoreboard_table": get_config("world_header_scoreboard_table", "[ OPERATIONAL LEADERBOARD ]"),
+            "hide_language_selector": get_bool_config("world_hide_language_selector", False),
+            "world_hide_language_selector": get_bool_config("world_hide_language_selector", False),
+            "hide_theme_toggle": get_bool_config("world_hide_theme_toggle", False),
+            "world_hide_theme_toggle": get_bool_config("world_hide_theme_toggle", False),
+            "navbar_compact_mode": get_config("world_navbar_compact_mode", "auto"),
+            "world_navbar_compact_mode": get_config("world_navbar_compact_mode", "auto"),
+        }
+    })
 
 @world_bp.route("/countdown", methods=["GET"])
 def countdown_page():

@@ -64,3 +64,54 @@ def load(app):
         return [m for m in items if m.title != "Theme Settings" and m.route != "/admin/theme_settings"]
 
     app.jinja_env.globals["get_admin_plugin_menu_bar"] = custom_get_admin_plugin_menu_bar
+
+    # Helper to retrieve challenge country info and bonuses for templates
+    def get_challenge_country_info(challenge_id):
+        try:
+            cc = ChallengeCountry.query.filter_by(challenge_id=challenge_id).first()
+            if not cc:
+                return None
+            from CTFd.plugins.world_theme.api import load_countries_data
+            countries_data = load_countries_data()
+            c_info = countries_data.get(cc.country_iso, {})
+            return {
+                "iso": cc.country_iso,
+                "name": c_info.get("name", cc.country_iso),
+                "bonus_first": cc.bonus_first or 0,
+                "bonus_second": cc.bonus_second or 0,
+                "bonus_third": cc.bonus_third or 0,
+            }
+        except Exception:
+            return None
+
+    app.jinja_env.globals["get_challenge_country_info"] = get_challenge_country_info
+
+    # Helper to retrieve configured directory custom attribute field names
+    def get_directory_custom_fields():
+        cfg = get_config("world_directory_custom_fields") or ""
+        return [f.strip() for f in cfg.split(",") if f.strip()]
+
+    # Helper to retrieve a specific custom attribute value for a user or team
+    def get_custom_field_value(account, field_name):
+        if not account or not field_name:
+            return None
+        target = field_name.strip().lower()
+        try:
+            entries = account.get_fields(admin=False) if hasattr(account, "get_fields") else getattr(account, "field_entries", [])
+            for entry in entries:
+                if entry.field and entry.field.name and entry.field.name.strip().lower() == target:
+                    val = entry.value
+                    if val is True:
+                        return "Yes"
+                    elif val is False:
+                        return "No"
+                    elif isinstance(val, (list, dict)):
+                        import json
+                        return json.dumps(val)
+                    return str(val) if val is not None else None
+        except Exception:
+            pass
+        return None
+
+    app.jinja_env.globals["get_directory_custom_fields"] = get_directory_custom_fields
+    app.jinja_env.globals["get_custom_field_value"] = get_custom_field_value
