@@ -252,6 +252,31 @@ window.WorldGameboard = function() {
         if (worldJson.success && worldJson.data) {
           this.countriesData = worldJson.data;
 
+          // If geoData was not loaded yet, attempt fallback fetch with geometry
+          if (!geoData) {
+            try {
+              const fallbackRes = await fetch("/api/v1/world/countries?include_geometry=true");
+              if (fallbackRes.ok) {
+                const fallbackJson = await fallbackRes.json();
+                if (fallbackJson.success && fallbackJson.data) {
+                  geoData = {};
+                  Object.keys(fallbackJson.data).forEach(iso => {
+                    if (fallbackJson.data[iso] && fallbackJson.data[iso].d) {
+                      geoData[iso] = {
+                        d: fallbackJson.data[iso].d,
+                        transform: fallbackJson.data[iso].transform || ""
+                      };
+                    }
+                  });
+                  window._CTFD_WORLD_GEO = geoData;
+                  try {
+                    localStorage.setItem("ctfd_world_geo_cache", JSON.stringify(geoData));
+                  } catch(e) {}
+                }
+              }
+            } catch(e) {}
+          }
+
           // Merge cached SVG geometry
           if (geoData) {
             Object.keys(this.countriesData).forEach(iso => {
@@ -340,11 +365,14 @@ window.WorldGameboard = function() {
           (c.status === "captured_by_opponent" ? "captured-opponent " : ""));
         group.setAttribute("data-iso", c.iso);
 
-        // SVG Land Path
-        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        path.setAttribute("class", "land");
-        path.setAttribute("d", c.d);
-        group.appendChild(path);
+        // SVG Land Path (validate geometry string starts with M/m to prevent SVG path syntax error)
+        let path = null;
+        if (c.d && typeof c.d === "string" && (c.d.startsWith("M") || c.d.startsWith("m"))) {
+          path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          path.setAttribute("class", "land");
+          path.setAttribute("d", c.d);
+          group.appendChild(path);
+        }
         container.appendChild(group);
 
         // Centroid Indicator Pin (ONLY for active/assigned territories!)
@@ -362,7 +390,7 @@ window.WorldGameboard = function() {
           }
 
           // Fallback to path.getBBox() if neither calibrated override nor transform gave valid coordinates
-          if (!cx && !cy) {
+          if (!cx && !cy && path) {
             try {
               const bbox = path.getBBox();
               if (bbox.width > 0 && bbox.height > 0) {

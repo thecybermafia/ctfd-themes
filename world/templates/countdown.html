@@ -78,31 +78,41 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('views.themes_beta', theme='world', path='js/world-geo.js') }}?v={{ Configs.ctf_version or '2.3' }}.1002"></script>
 <script>
 (function() {
   let targetTimestamp = null;
   let redirectOnZero = true;
 
   // Load subtle background world map
-  fetch("/api/v1/world/geo")
-    .then(r => r.json())
-    .then(data => {
-      if (data.success && data.data) {
-        const svg = document.getElementById("countdown-bg-svg");
-        if (!svg) return;
-        const frag = document.createDocumentFragment();
-        Object.values(data.data).forEach(c => {
-          if (c.d) {
-            const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            p.setAttribute("d", c.d);
-            p.setAttribute("class", "countdown-map-land");
-            frag.appendChild(p);
-          }
-        });
-        svg.appendChild(frag);
+  function renderCountdownMap(geoData) {
+    if (!geoData) return;
+    const svg = document.getElementById("countdown-bg-svg");
+    if (!svg) return;
+    const frag = document.createDocumentFragment();
+    Object.values(geoData).forEach(c => {
+      if (c && c.d && typeof c.d === "string" && (c.d.startsWith("M") || c.d.startsWith("m"))) {
+        const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        p.setAttribute("d", c.d);
+        p.setAttribute("class", "countdown-map-land");
+        frag.appendChild(p);
       }
-    })
-    .catch(() => {});
+    });
+    svg.appendChild(frag);
+  }
+
+  if (window._CTFD_WORLD_GEO) {
+    renderCountdownMap(window._CTFD_WORLD_GEO);
+  } else {
+    fetch("/api/v1/world/geo")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data && data.success && data.data) {
+          renderCountdownMap(data.data);
+        }
+      })
+      .catch(() => {});
+  }
 
   function placeClock() {
     const placeholder = document.getElementById("countdown-clock-placeholder");
