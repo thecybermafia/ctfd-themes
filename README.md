@@ -104,24 +104,23 @@ sudo systemctl restart ctfd
 ## ☁️ Deploying to CTFd Enterprise Cloud / Hosted CTFd
 
 CTFd Cloud validates uploaded ZIP archives strictly:
-- **Themes**: Must have `static/` and `templates/` directly at the **root** of the ZIP.
-- **Plugins**: Must have `__init__.py` directly at the **root** of the ZIP.
+- **Single Root Directory**: The archive must contain **exactly one top-level directory** (e.g. `world/`). Having multiple directories or loose files at the root of the ZIP triggers: *"Zip contains multiple top-level directories"*.
+- **Required Subdirectories**: That directory must directly contain `static/` and `templates/`. Otherwise, it triggers: *"Zip is missing static or templates directory"*.
 
 ### 1. Uploading the World Theme
-Do **not** upload the entire repo ZIP (which throws *"Zip is missing static or templates directory"*). Zip only the **contents** of `world/`:
+From the repository root, package the `world/` folder so it forms the single top-level directory in the archive:
 ```bash
-cd world
-zip -r ../world.zip . -x "*.DS_Store*" "node_modules/*"
+zip -r world.zip world -x "*.DS_Store*" "world/node_modules/*"
 ```
 Then in CTFd Cloud: **Instance Management > Themes > Upload Theme**, select `world.zip`.
 
 ### 2. Uploading the Companion Plugin (`world_theme`)
-The companion plugin powers real-time country assignment and telemetry APIs. Zip the **contents** of `world_theme/`:
+The companion plugin powers real-time country assignment and telemetry APIs. Package `world_theme/` as the single top-level directory:
 ```bash
-cd world_theme
-zip -r ../world_theme.zip . -x "*.DS_Store*" "*__pycache__*"
+zip -r world_theme.zip world_theme -x "*.DS_Store*" "*__pycache__*"
 ```
 Then in CTFd Cloud: **Instance Management > Plugins > Upload Plugin**, select `world_theme.zip`.
+
 
 
 ---
