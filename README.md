@@ -101,25 +101,48 @@ sudo systemctl restart ctfd
 
 ---
 
+## ⚡ Performance, Caching & Anti-Abuse (Hosted CTFd Compliant)
+
+The World Theme and `world_theme` companion plugin are engineered for enterprise scale and fully compliant with **CTFd Cloud / Hosted CTFd** performance requirements:
+
+1. **Endpoint Caching**:
+   - `GET /api/v1/world/countries`: Cached via `@cache.memoize(timeout=60)` avoiding repeat full-table solve scans and country geometry serialization.
+   - `GET /api/v1/world/feed`: Solves and first blood telemetry cached with 60s TTL.
+   - `GET /api/v1/world/dominance`: Territory control calculations cached against account/challenge matrices.
+   - `GET /api/v1/world/settings`: Reads from CTFd's internal config cache via `get_config()`, eliminating 25+ database queries per invocation.
+
+2. **Client-Side Deduplication & Polling Backoff**:
+   - **`window.getWorldSettings()`**: Deduplicates in-flight promises and maintains a 60-second `sessionStorage` cache across public and challenge pages.
+   - **Adaptive Polling with Exponential Backoff**: Live feed polling dynamically throttles and backs off when encountering HTTP 429 rate-limit responses.
+
+3. **API Rate Limiting**:
+   - Enforces `@ratelimit(limit="300/m", key_func=get_ip)` across all unauthenticated `/api/v1/world/` routes.
+
+---
+
 ## ☁️ Deploying to CTFd Enterprise Cloud / Hosted CTFd
 
 CTFd Cloud validates uploaded ZIP archives strictly:
 - **Single Root Directory**: The archive must contain **exactly one top-level directory** (e.g. `world/`). Having multiple directories or loose files at the root of the ZIP triggers: *"Zip contains multiple top-level directories"*.
 - **Required Subdirectories**: That directory must directly contain `static/` and `templates/`. Otherwise, it triggers: *"Zip is missing static or templates directory"*.
 
-### 1. Uploading the World Theme
-From the repository root, package the `world/` folder so it forms the single top-level directory in the archive:
+### Automated Packaging (Recommended)
+Run the root builder script to package and validate compliant distribution archives into `dist/`:
 ```bash
-zip -r world.zip world -x "*.DS_Store*" "world/node_modules/*"
+python3 scripts/build_cloud_zips.py
 ```
-Then in CTFd Cloud: **Instance Management > Themes > Upload Theme**, select `world.zip`.
+- **Theme ZIP**: [`dist/themes/world.zip`](dist/themes/world.zip) -> Upload under **Instance Management > Themes > Upload Theme**.
+- **Plugin ZIP**: [`dist/plugins/world_theme.zip`](dist/plugins/world_theme.zip) -> Upload under **Instance Management > Plugins > Upload Plugin**.
 
-### 2. Uploading the Companion Plugin (`world_theme`)
-The companion plugin powers real-time country assignment and telemetry APIs. Package `world_theme/` as the single top-level directory:
+### Manual Packaging Commands
+If building manually:
 ```bash
+# 1. Package Theme
+zip -r world.zip world -x "*.DS_Store*" "world/node_modules/*"
+
+# 2. Package Companion Plugin
 zip -r world_theme.zip world_theme -x "*.DS_Store*" "*__pycache__*"
 ```
-Then in CTFd Cloud: **Instance Management > Plugins > Upload Plugin**, select `world_theme.zip`.
 
 
 
