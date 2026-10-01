@@ -3,11 +3,12 @@ import os
 import re
 from datetime import datetime
 from flask import Blueprint, jsonify, render_template, request, redirect, url_for
-from sqlalchemy import event
+from sqlalchemy import event, func
 from CTFd.models import Awards, Challenges, Solves, db
 from CTFd.utils import get_config, set_config
 from CTFd.utils.user import get_current_user, get_current_team, is_admin, authed
-from CTFd.utils.decorators import admins_only
+from CTFd.utils.decorators import admins_only, ratelimit
+from CTFd.cache import cache, make_cache_key
 from CTFd.plugins.world_theme.models import ChallengeCountry
 
 world_bp = Blueprint(
@@ -28,6 +29,21 @@ def load_countries_data():
         COUNTRIES_CACHE = json.load(f)
     return COUNTRIES_CACHE
 
+def make_user_cache_key(path=None):
+    if path is None:
+        path = request.endpoint
+    user = get_current_user()
+    team = get_current_team()
+    acc_id = f"t{team.id}" if team else (f"u{user.id}" if user else "anon")
+    admin_flag = "adm" if is_admin() else "pub"
+    geo_flag = "geo1" if request.args.get("include_geometry", "").lower() in ("true", "1") else "geo0"
+    return f"view/{path}/{admin_flag}/{acc_id}/{geo_flag}"
+
+def make_feed_cache_key():
+    adm = "adm" if is_admin() else "pub"
+    return f"view/world_theme.get_world_live_feed/{adm}"
+
+@cache.memoize(timeout=300)
 def get_country_mappings():
     """
     Returns a mapping of { challenge_id: iso_code } and { iso_code: challenge_id }.
@@ -40,7 +56,11 @@ def get_country_mappings():
         for cc in ChallengeCountry.query.all()
     }
 
-    challenges = Challenges.query.filter(Challenges.state != "hidden").all()
+    challenges = (
+        Challenges.query.filter(Challenges.state != "hidden")
+        .options(db.joinedload(Challenges.tags))
+        .all()
+    )
     tag_mappings = {}
     tag_regex = re.compile(r"^(?:country|iso):([a-z0-9_]+)$", re.IGNORECASE)
 
@@ -59,6 +79,12 @@ def get_country_mappings():
     iso_to_chal = {iso: chal_id for chal_id, iso in all_chal_to_iso.items()}
     return all_chal_to_iso, iso_to_chal
 
+def on_challenge_changed(mapper, connection, target):
+    try:
+        cache.delete_memoized(get_country_mappings)
+    except Exception:
+        pass
+
 def register_world_theme_listeners():
     """Attach SQLAlchemy event listeners.
 
@@ -66,12 +92,15 @@ def register_world_theme_listeners():
     attached multiple times if this module is imported more than once.
     """
     event.listen(Challenges, "after_insert", on_challenge_created)
+    event.listen(Challenges, "after_update", on_challenge_changed)
+    event.listen(Challenges, "after_delete", on_challenge_changed)
     event.listen(Solves, "after_insert", on_solve_award_bonus)
 
 
 def on_challenge_created(mapper, connection, target):
     """Automatically associate country when challenge is created, enforcing 1:1 mapping"""
     try:
+        cache.delete_memoized(get_country_mappings)
         if request:
             data = request.get_json(silent=True) or request.form
             country_iso = (data.get("country_iso") or "").strip().upper()
@@ -154,34 +183,80 @@ def on_solve_award_bonus(mapper, connection, target):
     except Exception as e:
         print("Error processing early-solver bonus:", e)
 
+@world_bp.route("/api/v1/world/geo", methods=["GET"])
+@ratelimit(method="GET", limit=60, interval=60)
+@cache.cached(timeout=86400, key_prefix="view/world_theme.get_world_geo")
+def get_world_geo():
+    """Returns static SVG geometry (d and transform) for all countries, cached for 24 hours."""
+    countries_data = load_countries_data()
+    geo = {
+        iso: {
+            "iso": c.get("iso", iso),
+            "name": c.get("name", iso),
+            "d": c.get("d", ""),
+            "transform": c.get("transform", ""),
+        }
+        for iso, c in countries_data.items()
+    }
+    resp = jsonify({"success": True, "data": geo})
+    resp.headers["Cache-Control"] = "public, max-age=86400, immutable"
+    return resp
+
 @world_bp.route("/api/v1/world/countries", methods=["GET"])
+@ratelimit(method="GET", limit=60, interval=60)
+@cache.cached(timeout=20, key_prefix=make_user_cache_key)
 def get_world_countries():
+    include_geometry = request.args.get("include_geometry", "").lower() in ("true", "1")
     countries_data = load_countries_data()
     chal_to_iso, iso_to_chal = get_country_mappings()
 
     user = get_current_user()
     team = get_current_team()
 
-    # Pre-fetch user's solves
+    mapped_chal_ids = list(iso_to_chal.values())
+
+    # Pre-fetch user's solves only for mapped challenges
     my_solves = set()
-    if authed():
+    if authed() and mapped_chal_ids:
         if team:
-            solves_query = Solves.query.filter_by(team_id=team.id).all()
+            solves_query = (
+                db.session.query(Solves.challenge_id)
+                .filter(Solves.team_id == team.id, Solves.challenge_id.in_(mapped_chal_ids))
+                .all()
+            )
         elif user:
-            solves_query = Solves.query.filter_by(user_id=user.id).all()
+            solves_query = (
+                db.session.query(Solves.challenge_id)
+                .filter(Solves.user_id == user.id, Solves.challenge_id.in_(mapped_chal_ids))
+                .all()
+            )
         else:
             solves_query = []
-        my_solves = {s.challenge_id for s in solves_query}
+        my_solves = {s[0] for s in solves_query}
 
-    # Pre-fetch all solved challenge IDs
-    all_solved_chal_ids = {s[0] for s in Solves.query.with_entities(Solves.challenge_id).all()}
+    # Pre-fetch solved challenge IDs ONLY for mapped challenges (avoids full table read of Solves)
+    all_solved_chal_ids = set()
+    if mapped_chal_ids:
+        all_solved_chal_ids = {
+            s[0]
+            for s in db.session.query(Solves.challenge_id)
+            .filter(Solves.challenge_id.in_(mapped_chal_ids))
+            .distinct()
+            .all()
+        }
 
-    # Pre-fetch challenges and bonus config
-    chal_ids = list(iso_to_chal.values())
+    # Pre-fetch challenges and bonus config with tags eager-loaded via joinedload
     challenges_map = {}
-    if chal_ids:
-        chals = Challenges.query.filter(Challenges.id.in_(chal_ids)).all()
-        cc_map = {cc.challenge_id: cc for cc in ChallengeCountry.query.filter(ChallengeCountry.challenge_id.in_(chal_ids)).all()}
+    if mapped_chal_ids:
+        chals = (
+            Challenges.query.options(db.joinedload(Challenges.tags))
+            .filter(Challenges.id.in_(mapped_chal_ids))
+            .all()
+        )
+        cc_map = {
+            cc.challenge_id: cc
+            for cc in ChallengeCountry.query.filter(ChallengeCountry.challenge_id.in_(mapped_chal_ids)).all()
+        }
         for c in chals:
             if not is_admin() and c.state == "hidden":
                 continue
@@ -213,26 +288,52 @@ def get_world_countries():
             else:
                 status = "active"
 
-        response[iso] = {
+        entry = {
             "iso": country.get("iso", iso),
             "name": country.get("name", iso),
-            "d": country.get("d", ""),
-            "transform": country.get("transform", ""),
             "challenge": chal_info,
             "status": status,
         }
+        if include_geometry:
+            entry["d"] = country.get("d", "")
+            entry["transform"] = country.get("transform", "")
+
+        response[iso] = entry
 
     return jsonify({"success": True, "data": response})
 
 @world_bp.route("/api/v1/world/feed", methods=["GET"])
+@ratelimit(method="GET", limit=60, interval=60)
+@cache.cached(timeout=10, key_prefix=make_feed_cache_key)
 def get_world_live_feed():
     """Returns real-time country captures and first bloods for all players"""
     if not is_admin() and get_config("score_visibility") == "admins":
         return jsonify({"success": True, "data": []})
 
-    solves = Solves.query.order_by(Solves.date.desc()).limit(35).all()
+    solves = (
+        Solves.query.options(
+            db.joinedload(Solves.challenge),
+            db.joinedload(Solves.user),
+            db.joinedload(Solves.team),
+        )
+        .order_by(Solves.date.desc())
+        .limit(35)
+        .all()
+    )
     chal_to_iso, iso_to_chal = get_country_mappings()
     countries_data = load_countries_data()
+
+    # Determine first bloods for all challenges in feed in a single batch query
+    feed_chal_ids = {s.challenge_id for s in solves}
+    first_blood_solve_ids = set()
+    if feed_chal_ids:
+        fb_query = (
+            db.session.query(Solves.challenge_id, func.min(Solves.id))
+            .filter(Solves.challenge_id.in_(feed_chal_ids))
+            .group_by(Solves.challenge_id)
+            .all()
+        )
+        first_blood_solve_ids = {row[1] for row in fb_query}
 
     feed = []
     for s in solves:
@@ -242,9 +343,7 @@ def get_world_live_feed():
         c_data = countries_data.get(iso, {}) if iso else {}
         country_name = c_data.get("name", "Unknown Country")
 
-        # Determine if this solve was First Blood
-        first_solve = Solves.query.filter_by(challenge_id=s.challenge_id).order_by(Solves.date.asc()).first()
-        is_first_blood = bool(first_solve and first_solve.id == s.id)
+        is_first_blood = (s.id in first_blood_solve_ids)
 
         solver_name = s.team.name if s.team else (s.user.name if s.user else "Anonymous")
         account_url = f"/teams/{s.team_id}" if s.team_id else (f"/users/{s.user_id}" if s.user_id else None)
@@ -293,105 +392,182 @@ def get_world_live_feed():
     return jsonify({"success": True, "data": feed})
 
 @world_bp.route("/api/v1/world/dominance", methods=["GET"])
+@ratelimit(method="GET", limit=60, interval=60)
+@cache.cached(timeout=20, key_prefix=make_user_cache_key)
 def get_world_dominance():
-    """Returns geopolitical territory conquest and dominance rankings"""
+    """Returns geopolitical territory conquest and dominance rankings using SQL aggregations"""
+    empty_resp = {
+        "total_territories": 0,
+        "conquered_territories": 0,
+        "unclaimed_territories": 0,
+        "world_conquest_pct": 0,
+        "top_conquerors": [],
+        "my_dominance": None,
+    }
     if not is_admin() and get_config("score_visibility") == "admins":
-        return jsonify({"success": True, "data": {"total_territories": 0, "conquered_territories": 0, "unclaimed_territories": 0, "world_conquest_pct": 0, "top_conquerors": [], "my_dominance": None}})
+        return jsonify({"success": True, "data": empty_resp})
 
     chal_to_iso, iso_to_chal = get_country_mappings()
     countries_data = load_countries_data()
 
     active_chal_ids = list(chal_to_iso.keys())
     if not active_chal_ids:
-        return jsonify({"success": True, "data": {"total_territories": 0, "conquered_territories": 0, "unclaimed_territories": 0, "world_conquest_pct": 0, "top_conquerors": [], "my_dominance": None}})
+        return jsonify({"success": True, "data": empty_resp})
 
-    chals = Challenges.query.filter(Challenges.id.in_(active_chal_ids)).all()
     if not is_admin():
-        active_chal_ids = [c.id for c in chals if c.state != "hidden"]
-    else:
-        active_chal_ids = [c.id for c in chals]
+        active_chal_ids = [
+            c[0]
+            for c in db.session.query(Challenges.id)
+            .filter(Challenges.id.in_(active_chal_ids), Challenges.state != "hidden")
+            .all()
+        ]
 
     total_territories = len(active_chal_ids)
     if total_territories == 0:
-        return jsonify({"success": True, "data": {"total_territories": 0, "conquered_territories": 0, "unclaimed_territories": 0, "world_conquest_pct": 0, "top_conquerors": [], "my_dominance": None}})
-
-    solves = Solves.query.filter(Solves.challenge_id.in_(active_chal_ids)).order_by(Solves.date.asc()).all()
+        return jsonify({"success": True, "data": empty_resp})
 
     is_teams = get_config("user_mode") == "teams"
-    account_territories = {}
-    account_names = {}
-    account_countries = {}
-    challenge_first_bloods = {}
+    acc_col = Solves.team_id if is_teams else Solves.user_id
 
-    for s in solves:
-        acc_id = s.team_id if is_teams else s.user_id
-        acc_obj = s.team if is_teams else s.user
-        if not acc_obj or acc_obj.banned or acc_obj.hidden:
-            continue
+    # 1. Total conquered territories & first bloods per challenge in SQL
+    fb_subquery = (
+        db.session.query(
+            Solves.challenge_id.label("chal_id"),
+            func.min(Solves.id).label("min_solve_id")
+        )
+        .filter(Solves.challenge_id.in_(active_chal_ids))
+        .group_by(Solves.challenge_id)
+        .subquery()
+    )
 
-        if acc_id not in account_territories:
-            account_territories[acc_id] = set()
-            account_names[acc_id] = acc_obj.name
-            account_countries[acc_id] = []
+    fb_accounts = (
+        db.session.query(Solves.challenge_id, acc_col)
+        .join(fb_subquery, Solves.id == fb_subquery.c.min_solve_id)
+        .filter(acc_col.isnot(None))
+        .all()
+    )
 
-        if s.challenge_id not in account_territories[acc_id]:
-            account_territories[acc_id].add(s.challenge_id)
-            iso = chal_to_iso.get(s.challenge_id)
-            if iso:
-                c_name = countries_data.get(iso, {}).get("name", iso)
-                account_countries[acc_id].append({"iso": iso, "name": c_name})
-
-        if s.challenge_id not in challenge_first_bloods:
-            challenge_first_bloods[s.challenge_id] = acc_id
-
-    conquered_territories = len(challenge_first_bloods)
+    conquered_territories = len(fb_accounts)
     unclaimed_territories = max(0, total_territories - conquered_territories)
     world_conquest_pct = round((conquered_territories / total_territories) * 100, 1) if total_territories > 0 else 0
 
-    top_conquerors = []
-    for acc_id, chal_set in account_territories.items():
-        t_count = len(chal_set)
-        dom_pct = round((t_count / total_territories) * 100, 1)
-        fb_count = sum(1 for cid, holder in challenge_first_bloods.items() if holder == acc_id)
-        acc_url = f"/teams/{acc_id}" if is_teams else f"/users/{acc_id}"
+    first_bloods_per_acc = {}
+    for cid, acc_id in fb_accounts:
+        first_bloods_per_acc[acc_id] = first_bloods_per_acc.get(acc_id, 0) + 1
 
-        top_conquerors.append({
-            "account_id": acc_id,
-            "name": account_names[acc_id],
-            "account_url": acc_url,
-            "territories_count": t_count,
-            "dominance_pct": dom_pct,
-            "first_bloods_count": fb_count,
-            "countries": account_countries[acc_id][:12],
+    # 2. Count distinct conquered territories per account in SQL
+    territory_counts = (
+        db.session.query(
+            acc_col.label("account_id"),
+            func.count(func.distinct(Solves.challenge_id)).label("territories_count")
+        )
+        .filter(Solves.challenge_id.in_(active_chal_ids), acc_col.isnot(None))
+        .group_by(acc_col)
+        .all()
+    )
+
+    if not territory_counts:
+        return jsonify({
+            "success": True,
+            "data": {
+                "total_territories": total_territories,
+                "conquered_territories": 0,
+                "unclaimed_territories": total_territories,
+                "world_conquest_pct": 0,
+                "top_conquerors": [],
+                "my_dominance": None,
+            }
         })
 
-    top_conquerors.sort(key=lambda x: (x["territories_count"], x["first_bloods_count"]), reverse=True)
+    account_stats = []
+    for acc_id, t_count in territory_counts:
+        account_stats.append({
+            "account_id": acc_id,
+            "territories_count": t_count,
+            "first_bloods_count": first_bloods_per_acc.get(acc_id, 0),
+        })
 
-    for idx, item in enumerate(top_conquerors):
-        item["rank"] = idx + 1
+    account_stats.sort(key=lambda x: (x["territories_count"], x["first_bloods_count"]), reverse=True)
 
-    my_dominance = None
+    top_count = int(get_config("world_dominance_top_count", 4) or 4)
+    top_acc_ids = {s["account_id"] for s in account_stats[:top_count]}
+
+    my_acc_id = None
     if authed():
         my_team = get_current_team()
         my_user = get_current_user()
         my_acc_id = my_team.id if is_teams and my_team else (my_user.id if my_user else None)
         if my_acc_id:
-            for item in top_conquerors:
-                if item["account_id"] == my_acc_id:
-                    my_dominance = item
-                    break
-            if not my_dominance:
-                my_dominance = {
-                    "account_id": my_acc_id,
-                    "name": my_team.name if is_teams and my_team else (my_user.name if my_user else "Operative"),
-                    "territories_count": 0,
-                    "dominance_pct": 0.0,
-                    "first_bloods_count": 0,
-                    "rank": len(top_conquerors) + 1,
-                    "countries": []
-                }
+            top_acc_ids.add(my_acc_id)
 
-    top_count = int(get_config("world_dominance_top_count", 4) or 4)
+    # 3. Fetch only accounts in top_acc_ids
+    if is_teams:
+        from CTFd.models import Teams
+        accounts_map = {
+            t.id: t
+            for t in Teams.query.filter(Teams.id.in_(top_acc_ids), Teams.banned == False, Teams.hidden == False).all()
+        }
+    else:
+        from CTFd.models import Users
+        accounts_map = {
+            u.id: u
+            for u in Users.query.filter(Users.id.in_(top_acc_ids), Users.banned == False, Users.hidden == False).all()
+        }
+
+    acc_solves = (
+        db.session.query(acc_col, Solves.challenge_id)
+        .filter(acc_col.in_(top_acc_ids), Solves.challenge_id.in_(active_chal_ids))
+        .all()
+    )
+    acc_countries = {}
+    for a_id, c_id in acc_solves:
+        if a_id not in acc_countries:
+            acc_countries[a_id] = []
+        if len(acc_countries[a_id]) < 12:
+            iso = chal_to_iso.get(c_id)
+            if iso:
+                c_name = countries_data.get(iso, {}).get("name", iso)
+                acc_countries[a_id].append({"iso": iso, "name": c_name})
+
+    top_conquerors = []
+    my_dominance = None
+
+    for rank, stat in enumerate(account_stats, 1):
+        a_id = stat["account_id"]
+        acc_obj = accounts_map.get(a_id)
+        if not acc_obj:
+            continue
+
+        item = {
+            "account_id": a_id,
+            "rank": rank,
+            "name": acc_obj.name,
+            "account_url": f"/teams/{a_id}" if is_teams else f"/users/{a_id}",
+            "territories_count": stat["territories_count"],
+            "dominance_pct": round((stat["territories_count"] / total_territories) * 100, 1),
+            "first_bloods_count": stat["first_bloods_count"],
+            "countries": acc_countries.get(a_id, [])[:12],
+        }
+
+        if len(top_conquerors) < top_count:
+            top_conquerors.append(item)
+
+        if a_id == my_acc_id:
+            my_dominance = item
+
+    if authed() and my_acc_id and not my_dominance:
+        my_team = get_current_team()
+        my_user = get_current_user()
+        my_dominance = {
+            "account_id": my_acc_id,
+            "name": my_team.name if is_teams and my_team else (my_user.name if my_user else "Operative"),
+            "territories_count": 0,
+            "dominance_pct": 0.0,
+            "first_bloods_count": 0,
+            "rank": len(account_stats) + 1,
+            "countries": [],
+        }
+
     return jsonify({
         "success": True,
         "data": {
@@ -399,8 +575,8 @@ def get_world_dominance():
             "conquered_territories": conquered_territories,
             "unclaimed_territories": unclaimed_territories,
             "world_conquest_pct": world_conquest_pct,
-            "top_conquerors": top_conquerors[:max(top_count, 10)],
-            "my_dominance": my_dominance
+            "top_conquerors": top_conquerors,
+            "my_dominance": my_dominance,
         }
     })
 
@@ -435,6 +611,7 @@ def manage_challenge_country(challenge_id):
         if cc:
             db.session.delete(cc)
             db.session.commit()
+            cache.delete_memoized(get_country_mappings)
         return jsonify({"success": True, "message": "Country assignment removed"})
 
     data = request.get_json() or request.form
@@ -505,6 +682,7 @@ def manage_challenge_country(challenge_id):
         db.session.add(cc)
 
     db.session.commit()
+    cache.delete_memoized(get_country_mappings)
     return jsonify({
         "success": True,
         "data": {
@@ -520,12 +698,7 @@ def manage_challenge_country(challenge_id):
     })
 
 def get_bool_config(key, default=False):
-    try:
-        from CTFd.models import Configs
-        c = Configs.query.filter_by(key=key).first()
-        val = c.value if c is not None else get_config(key, default)
-    except Exception:
-        val = get_config(key, default)
+    val = get_config(key, default)
     if isinstance(val, bool):
         return val
     if isinstance(val, str):
@@ -646,13 +819,17 @@ def admin_theme_settings():
     )
 
 @world_bp.route("/api/v1/world/settings", methods=["GET", "POST"])
+@ratelimit(method="GET", limit=60, interval=60)
 def world_settings_api():
     if request.method == "GET":
-        return jsonify({
-            "success": True,
-            "data": {
-                "scanlines_enabled": get_bool_config("world_scanlines_enabled", False),
-                "crt_glow_enabled": get_bool_config("world_crt_glow_enabled", True),
+        cache_key = "view/world_theme.world_settings_api"
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            return jsonify({"success": True, "data": cached_data})
+
+        settings_payload = {
+            "scanlines_enabled": get_bool_config("world_scanlines_enabled", False),
+            "crt_glow_enabled": get_bool_config("world_crt_glow_enabled", True),
                 "zoom_animation_enabled": get_bool_config("world_zoom_animation_enabled", True),
                 "grid_title": get_config("world_grid_title", "MATRIX COMMAND GRID"),
                 "default_view": get_config("world_default_view", "map"),
@@ -730,7 +907,11 @@ def world_settings_api():
                 "ctf_logo_light": get_config("ctf_logo_light"),
                 "ctf_logo_dark": get_config("ctf_logo_dark"),
                 "ctf_small_icon": get_config("ctf_small_icon"),
-            }
+        }
+        cache.set(cache_key, settings_payload, timeout=120)
+        return jsonify({
+            "success": True,
+            "data": settings_payload
         })
 
     # POST requires admin
@@ -903,6 +1084,10 @@ def world_settings_api():
     try:
         from CTFd.cache import clear_config
         clear_config()
+    except Exception:
+        pass
+    try:
+        cache.delete("view/world_theme.world_settings_api")
     except Exception:
         pass
 

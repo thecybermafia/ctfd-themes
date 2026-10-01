@@ -194,10 +194,33 @@ window.WorldGameboard = function() {
     async loadMapData() {
       this.error = null;
       try {
-        const [worldRes, chalsRes] = await Promise.all([
+        let geoData = window._CTFD_WORLD_GEO || null;
+        if (!geoData) {
+          try {
+            const cached = localStorage.getItem("ctfd_world_geo_cache");
+            if (cached) geoData = JSON.parse(cached);
+          } catch (e) {}
+        }
+
+        const fetchList = [
           fetch("/api/v1/world/countries"),
           fetch("/api/v1/challenges")
-        ]);
+        ];
+        if (!geoData) {
+          fetchList.push(fetch("/api/v1/world/geo").then(r => r.json()).catch(() => null));
+        }
+
+        const results = await Promise.all(fetchList);
+        const worldRes = results[0];
+        const chalsRes = results[1];
+
+        if (!geoData && results[2] && results[2].success) {
+          geoData = results[2].data;
+          window._CTFD_WORLD_GEO = geoData;
+          try {
+            localStorage.setItem("ctfd_world_geo_cache", JSON.stringify(geoData));
+          } catch (e) {}
+        }
 
         if (!worldRes.ok) {
           throw new Error(`HTTP error ${worldRes.status}: ${worldRes.statusText}`);
@@ -208,6 +231,16 @@ window.WorldGameboard = function() {
 
         if (worldJson.success && worldJson.data) {
           this.countriesData = worldJson.data;
+
+          // Merge cached SVG geometry
+          if (geoData) {
+            Object.keys(this.countriesData).forEach(iso => {
+              if (geoData[iso]) {
+                this.countriesData[iso].d = geoData[iso].d;
+                this.countriesData[iso].transform = geoData[iso].transform;
+              }
+            });
+          }
 
           // Map challenge IDs to country names, iso, and status
           const chalToCountry = {};

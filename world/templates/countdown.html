@@ -84,7 +84,7 @@
   let redirectOnZero = true;
 
   // Load subtle background world map
-  fetch("/api/v1/world/countries")
+  fetch("/api/v1/world/geo")
     .then(r => r.json())
     .then(data => {
       if (data.success && data.data) {
