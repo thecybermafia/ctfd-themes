@@ -34,8 +34,56 @@
           'eventSounds': [
             "{{ url_for('views.themes_beta', theme='world', path='sounds/notification.webm') }}",
             "{{ url_for('views.themes_beta', theme='world', path='sounds/notification.mp3') }}",
-          ],
-      }
+      };
+
+      // Global deduped settings loader with in-flight deduplication and sessionStorage caching
+      window.getWorldSettings = (function() {
+        let inflightPromise = null;
+        let memoryCache = null;
+        let lastFetchTime = 0;
+        const CACHE_TTL_MS = 60000; // 60s cache
+
+        return function(forceRefresh) {
+          const now = Date.now();
+          if (!forceRefresh && memoryCache && (now - lastFetchTime < CACHE_TTL_MS)) {
+            return Promise.resolve(memoryCache);
+          }
+          if (!forceRefresh && !memoryCache) {
+            try {
+              const stored = sessionStorage.getItem("world_settings_cache");
+              const storedTime = parseInt(sessionStorage.getItem("world_settings_time") || "0", 10);
+              if (stored && (now - storedTime < CACHE_TTL_MS)) {
+                memoryCache = JSON.parse(stored);
+                lastFetchTime = storedTime;
+                return Promise.resolve(memoryCache);
+              }
+            } catch(e) {}
+          }
+          if (inflightPromise) {
+            return inflightPromise;
+          }
+          inflightPromise = fetch("/api/v1/world/settings")
+            .then(function(r) { return r.ok ? r.json() : null; })
+            .then(function(data) {
+              inflightPromise = null;
+              if (data && data.success && data.data) {
+                memoryCache = data.data;
+                lastFetchTime = Date.now();
+                try {
+                  sessionStorage.setItem("world_settings_cache", JSON.stringify(data.data));
+                  sessionStorage.setItem("world_settings_time", String(lastFetchTime));
+                } catch(e) {}
+                return memoryCache;
+              }
+              return memoryCache || {};
+            })
+            .catch(function() {
+              inflightPromise = null;
+              return memoryCache || {};
+            });
+          return inflightPromise;
+        };
+      })();
   </script>
 
   {{ Configs.theme_header }}

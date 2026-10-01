@@ -47,9 +47,15 @@ window.WorldGameboard = function() {
     liveFeedEvents: [],
     liveFeedLoading: false,
     liveFeedInterval: null,
+    liveFeedIntervalId: null,
+    liveFeedIntervalTime: 45000,
+    liveFeedBackoffMultiplier: 1.0,
+    lastSolveId: 0,
+    isFetchingFeed: false,
+    lastFeedFetchTime: 0,
     gridTitle: "MATRIX COMMAND GRID",
     liveFeedTitle: "[ LIVE FEED ]",
-    liveFeedSubtitle: "ORBITAL UPLINK ACTIVE • 20s CYCLE",
+    liveFeedSubtitle: "ORBITAL UPLINK ACTIVE • REAL-TIME FEED",
     liveFeedBtnLabel: "LIVE FEED",
     filterAllNodesEnabled: true,
     filterBreachedEnabled: true,
@@ -58,6 +64,12 @@ window.WorldGameboard = function() {
     sectorFilterEnabled: true,
     guideEnabled: true,
     viewToggleEnabled: true,
+
+    // Target Finder (Quick Search) - Configurable via User Theme Settings
+    searchQuery: "",
+    searchResults: [],
+    searchDropdownOpen: false,
+    searchEnabled: false,
 
     // SVG Pan & Zoom State (ViewBox: 1008 x 651, Center: 504, 325.5)
     panX: 0,
@@ -82,33 +94,54 @@ window.WorldGameboard = function() {
 
       // 2. Load theme settings for title, default view, live feed, scanlines, glow, and zoom
       try {
-        const sRes = await fetch("/api/v1/world/settings");
-        if (sRes.ok) {
-          const sJson = await sRes.json();
-          if (sJson.success && sJson.data) {
-            const s = sJson.data;
-            if (s.grid_title) this.gridTitle = s.grid_title;
-            if (s.default_view === "grid") this.listView = true;
-            this.liveFeedEnabled = (s.live_feed_enabled !== false);
-            this.zoomAnimationEnabled = (s.zoom_animation_enabled !== false);
-            if (s.live_feed_title) this.liveFeedTitle = s.live_feed_title;
-            if (s.live_feed_subtitle) this.liveFeedSubtitle = s.live_feed_subtitle;
-            this.filterAllNodesEnabled = (s.filter_all_nodes_enabled !== false);
-            this.filterBreachedEnabled = (s.filter_breached_enabled !== false);
-            this.filterHostileEnabled = (s.filter_hostile_enabled !== false);
-            this.filterCountsEnabled = (s.filter_counts_enabled !== false);
-            this.sectorFilterEnabled = (s.sector_filter_enabled !== false);
-            this.guideEnabled = (s.guide_enabled !== false);
-            this.viewToggleEnabled = (s.view_toggle_enabled !== false);
+        const getSettings = window.getWorldSettings || function() {
+          return fetch("/api/v1/world/settings").then(r => r.json()).then(res => res.data || {}).catch(() => ({}));
+        };
+        const s = await getSettings();
+        if (s) {
+          if (s.grid_title) this.gridTitle = s.grid_title;
+          if (s.default_view === "grid") this.listView = true;
+          this.liveFeedEnabled = (s.live_feed_enabled !== false);
+          this.liveFeedIntervalTime = Math.max(30, parseInt(s.live_feed_interval, 10) || 45) * 1000;
+          this.zoomAnimationEnabled = (s.zoom_animation_enabled !== false);
+          if (s.live_feed_title) this.liveFeedTitle = s.live_feed_title;
+          if (s.live_feed_subtitle) this.liveFeedSubtitle = s.live_feed_subtitle;
+          this.filterAllNodesEnabled = (s.filter_all_nodes_enabled !== false);
+          this.filterBreachedEnabled = (s.filter_breached_enabled !== false);
+          this.filterHostileEnabled = (s.filter_hostile_enabled !== false);
+          this.filterCountsEnabled = (s.filter_counts_enabled !== false);
+          this.sectorFilterEnabled = (s.sector_filter_enabled !== false);
+          this.guideEnabled = (s.guide_enabled !== false);
+          this.viewToggleEnabled = (s.view_toggle_enabled !== false);
 
-            const wrapper = document.querySelector(".fb-gameboard-wrapper");
-            if (wrapper) {
-              if (s.scanlines_enabled) wrapper.classList.add("scanlines-active");
-              else wrapper.classList.remove("scanlines-active");
+          // User preferences from /settings or localStorage
+          const userSearch = localStorage.getItem("world_user_search_enabled");
+          this.searchEnabled = (userSearch !== null) ? (userSearch === "true") : false;
 
-              if (s.crt_glow_enabled !== false) wrapper.classList.add("crt-glow-active");
-              else wrapper.classList.remove("crt-glow-active");
-            }
+          const userCounts = localStorage.getItem("world_user_counts_enabled");
+          if (userCounts !== null) {
+            this.filterCountsEnabled = (userCounts === "true");
+          }
+
+          const userGuide = localStorage.getItem("world_user_guide_enabled");
+          const tutorialCompleted = localStorage.getItem("world_theme_tutorial_completed_v1");
+          if (userGuide !== null) {
+            this.guideEnabled = (userGuide === "true");
+          } else if (tutorialCompleted === "true") {
+            this.guideEnabled = false;
+          }
+
+          window.addEventListener("world:guide-completed", () => {
+            this.guideEnabled = false;
+          });
+
+          const wrapper = document.querySelector(".fb-gameboard-wrapper");
+          if (wrapper) {
+            if (s.scanlines_enabled) wrapper.classList.add("scanlines-active");
+            else wrapper.classList.remove("scanlines-active");
+
+            if (s.crt_glow_enabled !== false) wrapper.classList.add("crt-glow-active");
+            else wrapper.classList.remove("crt-glow-active");
           }
         }
       } catch (e) {}
@@ -130,12 +163,26 @@ window.WorldGameboard = function() {
       await this.loadMapData();
       this.initPanZoom();
       this.initKeyboardShortcuts();
-      this.fetchLiveFeed();
 
-      // Start background polling for live feed
-      this.liveFeedInterval = setInterval(() => {
+      if (this.liveFeedEnabled) {
         this.fetchLiveFeed();
-      }, 20000);
+        this.startLiveFeedPolling();
+      }
+
+      // Page visibility listener: pause polling when tab is hidden, resume when visible
+      document.addEventListener("visibilitychange", () => {
+        if (!this.liveFeedEnabled) return;
+        if (!document.hidden) {
+          const now = Date.now();
+          if (now - this.lastFeedFetchTime >= this.liveFeedIntervalTime) {
+            this.liveFeedBackoffMultiplier = 1.0;
+            this.fetchLiveFeed();
+          }
+          this.startLiveFeedPolling();
+        } else {
+          this.stopLiveFeedPolling();
+        }
+      });
 
       // Refresh map on challenge submission / reload
       window.addEventListener("load-challenges", async () => {
@@ -422,6 +469,9 @@ window.WorldGameboard = function() {
       }
 
       this.targetingActive = true;
+      if (window.WorldAudio) {
+        window.WorldAudio.playBlip();
+      }
 
       // Extract precision geometric centroid
       let targetX = (c.centroid && c.centroid.x) || (typeof CALIBRATED_CENTROIDS !== "undefined" && CALIBRATED_CENTROIDS[c.iso] ? CALIBRATED_CENTROIDS[c.iso][0] : 504);
@@ -586,6 +636,9 @@ window.WorldGameboard = function() {
     },
 
     resetZoom() {
+      if (window.WorldAudio) {
+        window.WorldAudio.playBlip();
+      }
       this.scale = 1.0;
       this.panX = 0;
       this.panY = 0;
@@ -601,6 +654,13 @@ window.WorldGameboard = function() {
           this.zoomOut();
         } else if (e.key === "0") {
           this.resetZoom();
+        } else if (e.key === "/" && this.searchEnabled) {
+          const searchInput = document.querySelector(".hud-search-input");
+          if (searchInput && document.activeElement !== searchInput) {
+            e.preventDefault();
+            searchInput.focus();
+            searchInput.select();
+          }
         }
       });
     },
@@ -679,8 +739,87 @@ window.WorldGameboard = function() {
         if (this.currentFilter === "mine" && !c.solved_by_me) return false;
         if (this.currentFilter === "others" && (c.solved_by_me || c.status !== "captured_by_opponent")) return false;
         if (this.selectedCategory && c.category !== this.selectedCategory) return false;
+        if (this.searchQuery && this.searchQuery.trim()) {
+          const q = this.searchQuery.toLowerCase().trim();
+          const matchName = c.name && c.name.toLowerCase().includes(q);
+          const matchCat = c.category && c.category.toLowerCase().includes(q);
+          const matchCountry = c.country_name && c.country_name.toLowerCase().includes(q);
+          const matchIso = c.country_iso && c.country_iso.toLowerCase().includes(q);
+          if (!matchName && !matchCat && !matchCountry && !matchIso) return false;
+        }
         return true;
       });
+    },
+
+    // Target Finder (Search Bar) Handlers
+    onSearchInput() {
+      const q = (this.searchQuery || "").trim().toLowerCase();
+      if (!q) {
+        this.searchResults = [];
+        this.searchDropdownOpen = false;
+        return;
+      }
+      const matches = this.challenges.filter(c => {
+        const nameMatch = c.name && c.name.toLowerCase().includes(q);
+        const catMatch = c.category && c.category.toLowerCase().includes(q);
+        const countryMatch = c.country_name && c.country_name.toLowerCase().includes(q);
+        const isoMatch = c.country_iso && c.country_iso.toLowerCase().includes(q);
+        return nameMatch || catMatch || countryMatch || isoMatch;
+      });
+      this.searchResults = matches.slice(0, 8);
+      this.searchDropdownOpen = (this.searchResults.length > 0 && !this.listView);
+    },
+
+    clearSearch() {
+      this.searchQuery = "";
+      this.searchResults = [];
+      this.searchDropdownOpen = false;
+    },
+
+    selectSearchResult(chal) {
+      this.searchDropdownOpen = false;
+      if (this.listView) {
+        this.loadChallenge(chal.id);
+        return;
+      }
+      if (chal.country_iso && this.countriesData[chal.country_iso]) {
+        this.engageCountry(this.countriesData[chal.country_iso]);
+      } else {
+        this.loadChallenge(chal.id);
+      }
+    },
+
+    engageFirstSearchResult() {
+      if (this.searchResults && this.searchResults.length > 0) {
+        this.selectSearchResult(this.searchResults[0]);
+      }
+    },
+
+    panToCountry(iso) {
+      if (!iso) return;
+      if (this.listView) {
+        this.listView = false;
+      }
+      const countryObj = this.countriesData[iso];
+      if (countryObj && countryObj.challenge) {
+        this.engageCountry(countryObj);
+        return;
+      }
+      let targetX = 504, targetY = 325.5;
+      if (typeof CALIBRATED_CENTROIDS !== "undefined" && CALIBRATED_CENTROIDS[iso]) {
+        targetX = CALIBRATED_CENTROIDS[iso][0];
+        targetY = CALIBRATED_CENTROIDS[iso][1];
+      }
+      const reticle = document.getElementById("svg-sniper-reticle");
+      if (reticle) {
+        reticle.setAttribute("transform", `translate(${targetX}, ${targetY})`);
+        reticle.style.display = "block";
+        reticle.classList.remove("locking");
+        void reticle.offsetWidth;
+        reticle.classList.add("locking");
+        setTimeout(() => { if (reticle) reticle.style.display = "none"; }, 1200);
+      }
+      this.zoomTo(targetX, targetY, 2.5);
     },
 
     loadChallenge(challengeId) {
@@ -705,7 +844,8 @@ window.WorldGameboard = function() {
         localStorage.setItem("world_livefeed_open", this.liveFeedOpen ? "true" : "false");
       } catch(e) {}
       if (this.liveFeedOpen) {
-        this.fetchLiveFeed();
+        this.liveFeedBackoffMultiplier = 1.0;
+        this.fetchLiveFeed(true);
       }
     },
 
@@ -723,17 +863,80 @@ window.WorldGameboard = function() {
       } catch(e) {}
     },
 
-    async fetchLiveFeed() {
+    startLiveFeedPolling() {
+      this.stopLiveFeedPolling();
+      if (!this.liveFeedEnabled) return;
+
+      const schedule = () => {
+        const backoff = Math.min(2.5, Math.max(1.0, this.liveFeedBackoffMultiplier || 1.0));
+        const delay = Math.min(120000, Math.round(this.liveFeedIntervalTime * backoff));
+        this.liveFeedIntervalId = setTimeout(async () => {
+          if (document.hidden) {
+            return; // tab hidden in background, don't poll
+          }
+          await this.fetchLiveFeed();
+          schedule();
+        }, delay);
+      };
+
+      schedule();
+    },
+
+    stopLiveFeedPolling() {
+      if (this.liveFeedIntervalId) {
+        clearTimeout(this.liveFeedIntervalId);
+        this.liveFeedIntervalId = null;
+      }
+    },
+
+    async fetchLiveFeed(force = false) {
+      if (!this.liveFeedEnabled && !force) return;
+      if (this.isFetchingFeed) return;
+      this.isFetchingFeed = true;
+
       try {
-        const res = await fetch("/api/v1/world/feed?limit=30");
+        let url = "/api/v1/world/feed?limit=30";
+        if (this.lastSolveId && this.liveFeedEvents && this.liveFeedEvents.length > 0) {
+          url += `&since_id=${this.lastSolveId}`;
+        }
+        const res = await fetch(url, {
+          headers: { "Accept": "application/json" }
+        });
+
+        this.lastFeedFetchTime = Date.now();
+
+        if (res.status === 304) {
+          // No changes since last poll - increase backoff slightly up to 2.5x
+          this.liveFeedBackoffMultiplier = Math.min(2.5, (this.liveFeedBackoffMultiplier || 1.0) + 0.5);
+          return;
+        }
+
         if (res.ok) {
           const json = await res.json();
-          if (json.success && json.data) {
-            this.liveFeedEvents = json.data;
+          if (json.success) {
+            if (json.changed === false) {
+              // Server confirms no new solves
+              this.liveFeedBackoffMultiplier = Math.min(2.5, (this.liveFeedBackoffMultiplier || 1.0) + 0.5);
+            } else if (Array.isArray(json.data) && json.data.length > 0) {
+              this.liveFeedEvents = json.data;
+              this.liveFeedBackoffMultiplier = 1.0; // Reset backoff on new events
+
+              let maxId = json.last_id || 0;
+              if (!maxId) {
+                for (const ev of json.data) {
+                  if (ev.solve_id && ev.solve_id > maxId) {
+                    maxId = ev.solve_id;
+                  }
+                }
+              }
+              if (maxId) this.lastSolveId = maxId;
+            }
           }
         }
       } catch (e) {
-        // network drop ignored
+        // Silently ignore transient network drops or server restarts
+      } finally {
+        this.isFetchingFeed = false;
       }
     },
 

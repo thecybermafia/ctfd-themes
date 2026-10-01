@@ -1,8 +1,9 @@
+import hashlib
 import json
 import os
 import re
 from datetime import datetime
-from flask import Blueprint, jsonify, render_template, request, redirect, url_for
+from flask import Blueprint, jsonify, make_response, render_template, request, redirect, url_for
 from sqlalchemy import event, func
 from CTFd.models import Awards, Challenges, Solves, db
 from CTFd.utils import get_config, set_config
@@ -42,6 +43,13 @@ def make_user_cache_key(path=None):
 def make_feed_cache_key():
     adm = "adm" if is_admin() else "pub"
     return f"view/world_theme.get_world_live_feed/{adm}"
+
+def get_solve_state_summary():
+    """Returns (max_solve_id, solve_count) in a single fast scalar query (<1ms)"""
+    return db.session.query(
+        func.coalesce(func.max(Solves.id), 0),
+        func.count(Solves.id)
+    ).first()
 
 @cache.memoize(timeout=300)
 def get_country_mappings():
@@ -204,15 +212,33 @@ def get_world_geo():
 
 @world_bp.route("/api/v1/world/countries", methods=["GET"])
 @ratelimit(method="GET", limit=60, interval=60)
-@cache.cached(timeout=20, key_prefix=make_user_cache_key)
 def get_world_countries():
     include_geometry = request.args.get("include_geometry", "").lower() in ("true", "1")
-    countries_data = load_countries_data()
-    chal_to_iso, iso_to_chal = get_country_mappings()
-
     user = get_current_user()
     team = get_current_team()
+    acc_id = f"t{team.id}" if team else (f"u{user.id}" if user else "anon")
+    admin_flag = "adm" if is_admin() else "pub"
+    geo_flag = "geo1" if include_geometry else "geo0"
 
+    max_solve_id, solve_count = get_solve_state_summary()
+    etag = f'"wcountries-{max_solve_id}-{solve_count}-{admin_flag}-{acc_id}-{geo_flag}"'
+
+    if request.headers.get("If-None-Match") == etag:
+        resp = make_response("", 304)
+        resp.headers["ETag"] = etag
+        resp.headers["Cache-Control"] = "private, max-age=15, must-revalidate"
+        return resp
+
+    cache_key = f"view/world_theme.countries/{admin_flag}/{acc_id}/{geo_flag}/{max_solve_id}/{solve_count}"
+    cached_res = cache.get(cache_key)
+    if cached_res is not None:
+        resp = jsonify({"success": True, "data": cached_res})
+        resp.headers["ETag"] = etag
+        resp.headers["Cache-Control"] = "private, max-age=15, must-revalidate"
+        return resp
+
+    countries_data = load_countries_data()
+    chal_to_iso, iso_to_chal = get_country_mappings()
     mapped_chal_ids = list(iso_to_chal.values())
 
     # Pre-fetch user's solves only for mapped challenges
@@ -300,16 +326,58 @@ def get_world_countries():
 
         response[iso] = entry
 
-    return jsonify({"success": True, "data": response})
+    cache.set(cache_key, response, timeout=30)
+    resp = jsonify({"success": True, "data": response})
+    resp.headers["ETag"] = etag
+    resp.headers["Cache-Control"] = "private, max-age=15, must-revalidate"
+    return resp
 
 @world_bp.route("/api/v1/world/feed", methods=["GET"])
 @ratelimit(method="GET", limit=60, interval=60)
-@cache.cached(timeout=10, key_prefix=make_feed_cache_key)
 def get_world_live_feed():
-    """Returns real-time country captures and first bloods for all players"""
+    """Returns real-time country captures and first bloods for all players with ETag and since_id polling support"""
     if not is_admin() and get_config("score_visibility") == "admins":
-        return jsonify({"success": True, "data": []})
+        return jsonify({"success": True, "data": [], "last_id": 0})
 
+    max_solve_id, solve_count = get_solve_state_summary()
+    role_flag = "adm" if is_admin() else "pub"
+    etag = f'"wfeed-{max_solve_id}-{solve_count}-{role_flag}"'
+
+    # 1. HTTP 304 Not Modified if ETag matches
+    if request.headers.get("If-None-Match") == etag:
+        resp = make_response("", 304)
+        resp.headers["ETag"] = etag
+        resp.headers["Cache-Control"] = "public, max-age=10, must-revalidate"
+        return resp
+
+    # 2. since_id support: if client already has latest solves, return tiny empty diff
+    since_id = request.args.get("since_id", type=int)
+    if since_id is not None and since_id >= max_solve_id and max_solve_id > 0:
+        resp = jsonify({
+            "success": True,
+            "changed": False,
+            "data": [],
+            "last_id": max_solve_id
+        })
+        resp.headers["ETag"] = etag
+        resp.headers["Cache-Control"] = "public, max-age=10, must-revalidate"
+        return resp
+
+    # 3. Check cache for full feed payload
+    feed_cache_key = f"view/world_theme.feed_data/{role_flag}/{max_solve_id}/{solve_count}"
+    cached_feed = cache.get(feed_cache_key)
+    if cached_feed is not None:
+        resp = jsonify({
+            "success": True,
+            "changed": True,
+            "data": cached_feed,
+            "last_id": max_solve_id
+        })
+        resp.headers["ETag"] = etag
+        resp.headers["Cache-Control"] = "public, max-age=10, must-revalidate"
+        return resp
+
+    # 4. Cache miss: query DB
     solves = (
         Solves.query.options(
             db.joinedload(Solves.challenge),
@@ -389,11 +457,19 @@ def get_world_live_feed():
                 "date": datetime.utcnow().isoformat(),
             })
 
-    return jsonify({"success": True, "data": feed})
+    cache.set(feed_cache_key, feed, timeout=30)
+    resp = jsonify({
+        "success": True,
+        "changed": True,
+        "data": feed,
+        "last_id": max_solve_id
+    })
+    resp.headers["ETag"] = etag
+    resp.headers["Cache-Control"] = "public, max-age=10, must-revalidate"
+    return resp
 
 @world_bp.route("/api/v1/world/dominance", methods=["GET"])
 @ratelimit(method="GET", limit=60, interval=60)
-@cache.cached(timeout=20, key_prefix=make_user_cache_key)
 def get_world_dominance():
     """Returns geopolitical territory conquest and dominance rankings using SQL aggregations"""
     empty_resp = {
@@ -406,6 +482,27 @@ def get_world_dominance():
     }
     if not is_admin() and get_config("score_visibility") == "admins":
         return jsonify({"success": True, "data": empty_resp})
+
+    user = get_current_user()
+    team = get_current_team()
+    acc_id = f"t{team.id}" if team else (f"u{user.id}" if user else "anon")
+    admin_flag = "adm" if is_admin() else "pub"
+
+    max_solve_id, solve_count = get_solve_state_summary()
+    etag = f'"wdominance-{max_solve_id}-{solve_count}-{admin_flag}-{acc_id}"'
+    if request.headers.get("If-None-Match") == etag:
+        resp = make_response("", 304)
+        resp.headers["ETag"] = etag
+        resp.headers["Cache-Control"] = "public, max-age=20, must-revalidate"
+        return resp
+
+    cache_key = f"view/world_theme.dominance/{admin_flag}/{acc_id}/{max_solve_id}/{solve_count}"
+    cached_res = cache.get(cache_key)
+    if cached_res is not None:
+        resp = jsonify({"success": True, "data": cached_res})
+        resp.headers["ETag"] = etag
+        resp.headers["Cache-Control"] = "public, max-age=20, must-revalidate"
+        return resp
 
     chal_to_iso, iso_to_chal = get_country_mappings()
     countries_data = load_countries_data()
@@ -568,17 +665,22 @@ def get_world_dominance():
             "countries": [],
         }
 
-    return jsonify({
+    dominance_payload = {
+        "total_territories": total_territories,
+        "conquered_territories": conquered_territories,
+        "unclaimed_territories": unclaimed_territories,
+        "world_conquest_pct": world_conquest_pct,
+        "top_conquerors": top_conquerors,
+        "my_dominance": my_dominance,
+    }
+    cache.set(cache_key, dominance_payload, timeout=30)
+    resp = jsonify({
         "success": True,
-        "data": {
-            "total_territories": total_territories,
-            "conquered_territories": conquered_territories,
-            "unclaimed_territories": unclaimed_territories,
-            "world_conquest_pct": world_conquest_pct,
-            "top_conquerors": top_conquerors,
-            "my_dominance": my_dominance,
-        }
+        "data": dominance_payload
     })
+    resp.headers["ETag"] = etag
+    resp.headers["Cache-Control"] = "public, max-age=20, must-revalidate"
+    return resp
 
 @world_bp.route("/api/v1/world/challenges/<int:challenge_id>/country", methods=["GET", "POST", "DELETE"])
 @admins_only
@@ -742,10 +844,10 @@ def admin_theme_settings():
         "grid_title": get_config("world_grid_title", "MATRIX COMMAND GRID"),
         "default_view": get_config("world_default_view", "map"),
         "live_feed_enabled": get_bool_config("world_live_feed_enabled", True),
-        "live_feed_interval": int(get_config("world_live_feed_interval", 20) or 20),
+        "live_feed_interval": int(get_config("world_live_feed_interval", 45) or 45),
         "live_feed_limit": int(get_config("world_live_feed_limit", 30) or 30),
         "live_feed_title": get_config("world_live_feed_title", "[ LIVE FEED ]"),
-        "live_feed_subtitle": get_config("world_live_feed_subtitle", "ORBITAL UPLINK ACTIVE • 20s CYCLE"),
+        "live_feed_subtitle": get_config("world_live_feed_subtitle", "ORBITAL UPLINK ACTIVE • REAL-TIME FEED"),
         "filter_all_nodes_enabled": get_bool_config("world_filter_all_nodes_enabled", True),
         "filter_breached_enabled": get_bool_config("world_filter_breached_enabled", True),
         "filter_hostile_enabled": get_bool_config("world_filter_hostile_enabled", True),
@@ -821,23 +923,23 @@ def admin_theme_settings():
 @world_bp.route("/api/v1/world/settings", methods=["GET", "POST"])
 @ratelimit(method="GET", limit=60, interval=60)
 def world_settings_api():
-    if request.method == "GET":
+    if request.method in ("GET", "HEAD"):
         cache_key = "view/world_theme.world_settings_api"
         cached_data = cache.get(cache_key)
         if cached_data is not None:
-            return jsonify({"success": True, "data": cached_data})
-
-        settings_payload = {
-            "scanlines_enabled": get_bool_config("world_scanlines_enabled", False),
-            "crt_glow_enabled": get_bool_config("world_crt_glow_enabled", True),
+            settings_payload = cached_data
+        else:
+            settings_payload = {
+                "scanlines_enabled": get_bool_config("world_scanlines_enabled", False),
+                "crt_glow_enabled": get_bool_config("world_crt_glow_enabled", True),
                 "zoom_animation_enabled": get_bool_config("world_zoom_animation_enabled", True),
                 "grid_title": get_config("world_grid_title", "MATRIX COMMAND GRID"),
                 "default_view": get_config("world_default_view", "map"),
                 "live_feed_enabled": get_bool_config("world_live_feed_enabled", True),
-                "live_feed_interval": int(get_config("world_live_feed_interval", 20) or 20),
+                "live_feed_interval": int(get_config("world_live_feed_interval", 45) or 45),
                 "live_feed_limit": int(get_config("world_live_feed_limit", 30) or 30),
                 "live_feed_title": get_config("world_live_feed_title", "[ LIVE FEED ]"),
-                "live_feed_subtitle": get_config("world_live_feed_subtitle", "ORBITAL UPLINK ACTIVE • 20s CYCLE"),
+                "live_feed_subtitle": get_config("world_live_feed_subtitle", "ORBITAL UPLINK ACTIVE • REAL-TIME FEED"),
                 "filter_all_nodes_enabled": get_bool_config("world_filter_all_nodes_enabled", True),
                 "filter_breached_enabled": get_bool_config("world_filter_breached_enabled", True),
                 "filter_hostile_enabled": get_bool_config("world_filter_hostile_enabled", True),
@@ -909,10 +1011,22 @@ def world_settings_api():
                 "ctf_small_icon": get_config("ctf_small_icon"),
         }
         cache.set(cache_key, settings_payload, timeout=120)
-        return jsonify({
+
+        settings_hash = hashlib.md5(json.dumps(settings_payload, sort_keys=True).encode("utf-8")).hexdigest()[:16]
+        etag = f'"wsettings-{settings_hash}"'
+        if request.headers.get("If-None-Match") == etag:
+            resp = make_response("", 304)
+            resp.headers["ETag"] = etag
+            resp.headers["Cache-Control"] = "public, max-age=60, must-revalidate"
+            return resp
+
+        resp = jsonify({
             "success": True,
             "data": settings_payload
         })
+        resp.headers["ETag"] = etag
+        resp.headers["Cache-Control"] = "public, max-age=60, must-revalidate"
+        return resp
 
     # POST requires admin
     if not is_admin():
@@ -934,13 +1048,13 @@ def world_settings_api():
     if "live_feed_enabled" in data:
         set_config("world_live_feed_enabled", "true" if data.get("live_feed_enabled") in (True, "true", "on", 1) else "false")
     if "live_feed_interval" in data:
-        set_config("world_live_feed_interval", str(max(5, int(data.get("live_feed_interval", 20) or 20))))
+        set_config("world_live_feed_interval", str(max(20, int(data.get("live_feed_interval", 45) or 45))))
     if "live_feed_limit" in data:
         set_config("world_live_feed_limit", str(max(5, int(data.get("live_feed_limit", 30) or 30))))
     if "live_feed_title" in data:
         set_config("world_live_feed_title", (data.get("live_feed_title") or "[ LIVE FEED ]").strip())
     if "live_feed_subtitle" in data:
-        set_config("world_live_feed_subtitle", (data.get("live_feed_subtitle") or "ORBITAL UPLINK ACTIVE • 20s CYCLE").strip())
+        set_config("world_live_feed_subtitle", (data.get("live_feed_subtitle") or "ORBITAL UPLINK ACTIVE • REAL-TIME FEED").strip())
 
     if "filter_all_nodes_enabled" in data:
         set_config("world_filter_all_nodes_enabled", "true" if data.get("filter_all_nodes_enabled") in (True, "true", "on", 1) else "false")

@@ -18,14 +18,15 @@
         }
       } catch(e) {}
 
-      // Check global setting from api
-      fetch("/api/v1/world/settings")
-        .then(r => r.json())
-        .then(res => {
-          if (res.success && res.data) {
-            if (res.data.sound_effects_enabled !== undefined) {
-              this.enabled = (res.data.sound_effects_enabled !== false);
-            }
+      // Check global setting from api (deduped via window.getWorldSettings)
+      const getSettings = window.getWorldSettings || function() {
+        return fetch("/api/v1/world/settings").then(r => r.json()).then(res => res.data || {}).catch(() => ({}));
+      };
+
+      getSettings()
+        .then(settings => {
+          if (settings && settings.sound_effects_enabled !== undefined) {
+            this.enabled = (settings.sound_effects_enabled !== false);
           }
           this.updateNavbarToggle();
         })

@@ -170,11 +170,13 @@
         try {
             const hasCompleted = localStorage.getItem(TOUR_STORAGE_KEY);
             if (!hasCompleted) {
-                // Check if tutorial feature is enabled
-                fetch("/api/v1/world/settings")
-                    .then(r => r.json())
-                    .then(res => {
-                        if (res.success && res.data && res.data.tutorial_enabled !== false) {
+                // Check if tutorial feature is enabled (deduped via window.getWorldSettings)
+                const getSettings = window.getWorldSettings || function() {
+                    return fetch("/api/v1/world/settings").then(r => r.json()).then(res => res.data || {}).catch(() => ({}));
+                };
+                getSettings()
+                    .then(settings => {
+                        if (settings && settings.tutorial_enabled !== false) {
                             setTimeout(() => {
                                 window.startWorldTutorial(false);
                             }, 1200);

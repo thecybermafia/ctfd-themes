@@ -113,12 +113,14 @@
   }
   placeClock();
 
-  // Fetch settings from World Theme settings endpoint
-  fetch("/api/v1/world/settings")
-    .then(r => r.json())
-    .then(data => {
-      if (data.success && data.data) {
-        const s = data.data;
+  // Fetch settings from World Theme settings endpoint (deduped via window.getWorldSettings)
+  const getSettings = window.getWorldSettings || function() {
+    return fetch("/api/v1/world/settings").then(r => r.json()).then(res => res.data || {}).catch(() => ({}));
+  };
+
+  getSettings()
+    .then(s => {
+      if (s) {
         if (s.countdown_time) {
           targetTimestamp = new Date(s.countdown_time).getTime();
         }
