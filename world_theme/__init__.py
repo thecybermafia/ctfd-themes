@@ -69,7 +69,7 @@ def load(app):
     def get_challenge_country_info(challenge_id):
         try:
             cc = ChallengeCountry.query.filter_by(challenge_id=challenge_id).first()
-            if not cc:
+            if not cc or not cc.country_iso:
                 return None
             from CTFd.plugins.world_theme.api import load_countries_data
             countries_data = load_countries_data()

@@ -67,11 +67,11 @@
                 </span>
 
                 {% set c_country = get_challenge_country_info(challenge.id) if get_challenge_country_info is defined else None %}
-                {% if c_country and (Configs.world_challenge_territory_badge is not defined or Configs.world_challenge_territory_badge is not false and Configs.world_challenge_territory_badge != 'false') %}
+                {% if c_country and c_country.iso and (Configs.world_challenge_territory_badge is not defined or Configs.world_challenge_territory_badge is not false and Configs.world_challenge_territory_badge != 'false') %}
                   <span class="challenge-territory-badge badge bg-dark border border-success font-monospace py-1 px-3 text-success shadow-sm">
-                    <i class="flag-{{ c_country.iso.lower() }} me-1"></i>
-                    <span>TERRITORY: {{ c_country.name }} [{{ c_country.iso }}]</span>
-                    {% if c_country.bonus_first > 0 %}
+                    <i class="flag-{{ (c_country.iso or '').lower() }} me-1"></i>
+                    <span>TERRITORY: {{ c_country.name or c_country.iso }} [{{ c_country.iso }}]</span>
+                    {% if c_country.bonus_first and c_country.bonus_first > 0 %}
                       <span class="text-warning ms-1">• FIRST BLOOD +{{ c_country.bonus_first }} PTS</span>
                     {% endif %}
                   </span>
