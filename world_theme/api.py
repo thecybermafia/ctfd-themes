@@ -625,6 +625,11 @@ def admin_theme_settings():
         "hide_language_selector": get_bool_config("world_hide_language_selector", False),
         "hide_theme_toggle": get_bool_config("world_hide_theme_toggle", False),
         "navbar_compact_mode": get_config("world_navbar_compact_mode", "auto"),
+        "ctf_logo": get_config("ctf_logo"),
+        "ctf_logo_light": get_config("ctf_logo_light"),
+        "ctf_logo_dark": get_config("ctf_logo_dark"),
+        "ctf_small_icon": get_config("ctf_small_icon"),
+        "default_theme_mode": get_config("default_theme_mode", "dark"),
     }
 
     return render_template(
@@ -633,6 +638,11 @@ def admin_theme_settings():
         countries=sorted(countries_data.values(), key=lambda x: x["name"]),
         assigned_countries=assigned_countries,
         theme_configs=theme_configs,
+        ctf_logo=get_config("ctf_logo"),
+        ctf_logo_light=get_config("ctf_logo_light"),
+        ctf_logo_dark=get_config("ctf_logo_dark"),
+        ctf_small_icon=get_config("ctf_small_icon"),
+        default_theme_mode=get_config("default_theme_mode", "dark"),
     )
 
 @world_bp.route("/api/v1/world/settings", methods=["GET", "POST"])
@@ -715,6 +725,11 @@ def world_settings_api():
                 "world_hide_theme_toggle": get_bool_config("world_hide_theme_toggle", False),
                 "navbar_compact_mode": get_config("world_navbar_compact_mode", "auto"),
                 "world_navbar_compact_mode": get_config("world_navbar_compact_mode", "auto"),
+                "default_theme_mode": get_config("default_theme_mode", "dark"),
+                "ctf_logo": get_config("ctf_logo"),
+                "ctf_logo_light": get_config("ctf_logo_light"),
+                "ctf_logo_dark": get_config("ctf_logo_dark"),
+                "ctf_small_icon": get_config("ctf_small_icon"),
             }
         })
 
@@ -874,6 +889,16 @@ def world_settings_api():
     if "navbar_compact_mode" in data or "world_navbar_compact_mode" in data:
         val = data.get("world_navbar_compact_mode") if "world_navbar_compact_mode" in data else data.get("navbar_compact_mode")
         set_config("world_navbar_compact_mode", (val or "auto").strip().lower())
+    if "default_theme_mode" in data:
+        val = data.get("default_theme_mode")
+        if val in ("dark", "light"):
+            set_config("default_theme_mode", val)
+    if "ctf_logo_light" in data:
+        set_config("ctf_logo_light", data.get("ctf_logo_light"))
+    if "ctf_logo_dark" in data:
+        set_config("ctf_logo_dark", data.get("ctf_logo_dark"))
+    if "ctf_small_icon" in data:
+        set_config("ctf_small_icon", data.get("ctf_small_icon"))
 
     try:
         from CTFd.cache import clear_config

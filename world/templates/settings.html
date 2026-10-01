@@ -272,7 +272,7 @@
           <div class="tab-pane fade" id="referrals" role="tabpanel" x-data="ReferralsSettings" x-init="loadReferrals()">
             <template x-if="loading">
               <div class="text-center py-5">
-                <i class="fas fa-circle-notch fa-spin fa-2x text-primary mb-2"></i>
+                <i class="fas fa-circle-notch fa-spin fa-2x mb-2" style="color: var(--matrix-green);"></i>
                 <div class="text-muted font-monospace small">Loading referral information...</div>
               </div>
             </template>
@@ -315,7 +315,7 @@
                 <div class="row g-2 mb-4 text-center">
                   <div class="col-4">
                     <div class="p-2 border rounded">
-                      <div class="fs-4 fw-bold font-monospace text-primary" x-text="data.total_recruits">0</div>
+                      <div class="fs-4 fw-bold font-monospace" style="color: var(--matrix-green);" x-text="data.total_recruits">0</div>
                       <div class="small text-muted font-monospace">Enlisted</div>
                     </div>
                   </div>

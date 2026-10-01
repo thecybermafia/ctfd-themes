@@ -301,9 +301,9 @@ window.WorldGameboard = function() {
             // Breached by You: Precision Cyber Node Diamond with Sharp Technical Breached Marker
             pinG.setAttribute("class", "map-indicator indicator-solved");
             pinG.innerHTML = `
-              <polygon points="0,-8 7,0 0,8 -7,0" fill="rgba(0, 255, 102, 0.25)" stroke="#00ff66" stroke-width="1.2"/>
-              <circle cx="0" cy="0" r="3.2" fill="#00ff66"/>
-              <path d="M-2,0 L-0.4,1.8 L2.4,-1.4" fill="none" stroke="#020a04" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <polygon points="0,-8 7,0 0,8 -7,0" fill="var(--matrix-green-subtle, rgba(0, 255, 102, 0.25))" stroke="var(--matrix-green-bright, #00ff66)" stroke-width="1.2"/>
+              <circle cx="0" cy="0" r="3.2" fill="var(--matrix-green, #00ff66)"/>
+              <path d="M-2,0 L-0.4,1.8 L2.4,-1.4" fill="none" stroke="var(--matrix-bg-dark, #020a04)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
             `;
           } else if (c.status === "captured_by_opponent") {
             // Hostile / Breached by Opponent (Pulsing Crimson Radar Beacon + Target Triangle)
@@ -317,7 +317,7 @@ window.WorldGameboard = function() {
             pinG.setAttribute("class", "map-indicator indicator-active");
             pinG.innerHTML = `
               <circle cx="0" cy="0" r="6" fill="none" stroke="var(--matrix-green-bright)" stroke-width="1.2" class="beacon-pulse"/>
-              <polygon points="0,-7 5,3 -5,3" fill="var(--matrix-green-bright)" stroke="#04120a" stroke-width="0.6"/>
+              <polygon points="0,-7 5,3 -5,3" fill="var(--matrix-green-bright)" stroke="var(--matrix-bg-dark, #04120a)" stroke-width="0.6"/>
             `;
           }
           group.appendChild(pinG);
@@ -700,7 +700,7 @@ window.WorldGameboard = function() {
           }
         }
       } catch (e) {
-        console.warn("[MatrixGrid] Error fetching live feed:", e);
+        // network drop ignored
       }
     },
 

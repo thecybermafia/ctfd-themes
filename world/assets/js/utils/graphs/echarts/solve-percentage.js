@@ -73,7 +73,14 @@ export function getOption(solves, fails, optionMerge) {
           {
             value: solves,
             name: "Solves",
-            itemStyle: { color: "rgb(0, 209, 64)" },
+            itemStyle: {
+              color:
+                typeof window !== "undefined" && window.getComputedStyle
+                  ? getComputedStyle(document.documentElement)
+                      .getPropertyValue("--matrix-green")
+                      .trim() || "rgb(0, 209, 64)"
+                  : "rgb(0, 209, 64)",
+            },
           },
         ],
       },

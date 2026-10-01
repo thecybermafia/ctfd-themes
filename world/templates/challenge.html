@@ -2,10 +2,8 @@
   <div class="modal-content">
     <div class="modal-body py-4 px-4 px-sm-5">
 
-      <div>
-        <button type="button" class="btn-close float-end" data-bs-dismiss="modal" aria-label="Close"></button>
-
-        <ul class="nav nav-tabs">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <ul class="nav nav-tabs flex-grow-1">
           <li class="nav-item">
             <button class="nav-link active" data-bs-target="#challenge" @click="showChallenge()">
               {% trans %}Challenge{% endtrans %}
@@ -42,13 +40,23 @@
             {% endif %}
           {% endblock %}
         </ul>
+
+        <div class="challenge-window-controls ms-2 d-flex align-items-center gap-2">
+          <button type="button" class="challenge-reset-btn" id="challenge-reset-size-btn" title="Reset window size" style="display: none;">
+            <i class="fas fa-undo fa-xs"></i>
+          </button>
+          <button type="button" class="challenge-expand-btn" id="challenge-expand-toggle-btn" title="Expand Challenge Window">
+            <i class="fas fa-expand fa-xs"></i>
+          </button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
       </div>
 
-      <div>
-        <div class="tab-content">
-          <div role="tabpanel" class="tab-pane fade show active" id="challenge">
+      <div class="challenge-tab-content-wrapper flex-grow-1 d-flex flex-column w-100">
+        <div class="tab-content flex-grow-1 d-flex flex-column w-100">
+          <div role="tabpanel" class="tab-pane fade show active flex-grow-1 d-flex flex-column w-100" id="challenge">
             
-            <div class="challenge-modal-header text-center pt-3 pb-2">
+            <div class="challenge-modal-header text-center pt-3 pb-2 w-100">
               <h2 class="challenge-name mb-2">
                 {{ challenge.name }}
               </h2>
@@ -181,15 +189,15 @@
               </p>
             </template>
 
-            <div class="row submit-row">
-              <div class="col-12 col-sm-8">
+            <div class="row submit-row w-100 mx-0 mt-auto pt-3">
+              <div class="col-12 col-sm-8 px-1">
                 {% block input %}
                   <input
                       id="challenge-id" class="challenge-id" type="hidden"
                       value="{{ challenge.id }}"
                   >
                   <input
-                      id="challenge-input" class="challenge-input form-control"
+                      id="challenge-input" class="challenge-input form-control form-control-lg"
                       type="text" name="submission"
                       @keyup.enter="submitChallenge()"
                       placeholder="{% trans %}Flag{% endtrans %}" x-model="submission"
@@ -197,7 +205,7 @@
                 {% endblock %}
               </div>
 
-              <div class="col-12 col-sm-4 mt-3 mt-sm-0 key-submit">
+              <div class="col-12 col-sm-4 px-1 mt-3 mt-sm-0 key-submit">
                 {% block submit %}
                   <button
                       id="challenge-submit"
@@ -210,7 +218,7 @@
               </div>
             </div>
 
-            <div class="row notification-row">
+            <div class="row notification-row w-100 mx-0">
               <div class="col-12">
                 <template x-if="response">
                   {# This alert is re-used for all alerts, so it's important not to make it dismissible #}
@@ -383,5 +391,13 @@
         </div>
       </div>
     </div>
+
+    <!-- Interactive Resize Grabber Handle -->
+    <div class="challenge-resize-handle" id="challenge-resize-handle" title="Drag to resize challenge window">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M14 14H12V12H14V14ZM14 10H12V8H14V10ZM10 14H8V12H10V14ZM14 6H12V4H14V6ZM10 10H8V8H10V10ZM6 14H4V12H6V14Z"/>
+      </svg>
+    </div>
   </div>
 </div>
+

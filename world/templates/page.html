@@ -102,14 +102,27 @@
       window.addEventListener("resize", resizeCanvas);
       resizeCanvas();
 
-      function drawMatrix() {
+      let lastTime = 0;
+      const interval = 65; // Slower, cinematic matrix rain (~15fps)
+
+      function drawMatrix(timestamp) {
+        requestAnimationFrame(drawMatrix);
+        if (!timestamp) timestamp = performance.now();
+        const elapsed = timestamp - lastTime;
+        if (elapsed < interval) return;
+        lastTime = timestamp - (elapsed % interval);
+
         const isLight = document.documentElement.getAttribute("data-bs-theme") === "light";
         if (isLight) {
-          ctx.fillStyle = "rgba(248, 250, 252, 0.14)";
+          ctx.fillStyle = "rgba(248, 250, 252, 0.12)";
         } else {
-          ctx.fillStyle = "rgba(3, 8, 5, 0.08)";
+          ctx.fillStyle = "rgba(3, 8, 5, 0.06)";
         }
         ctx.fillRect(0, 0, width, height);
+
+        const rootStyle = getComputedStyle(document.documentElement);
+        const accentColor = rootStyle.getPropertyValue("--matrix-green").trim() || (isLight ? "#059669" : "#00e676");
+        const accentBright = rootStyle.getPropertyValue("--matrix-green-bright").trim() || (isLight ? "#047857" : "#e6fffa");
 
         ctx.font = fontSize + "px 'Courier New', monospace";
 
@@ -119,20 +132,20 @@
           const y = drops[i] * fontSize;
 
           if (isLight) {
-            // Head of drop is crisp slate
+            // Head of drop is crisp dark slate
             ctx.fillStyle = "#0f172a";
             ctx.fillText(text, x, y);
 
-            // Body of drop is rich forest emerald
-            ctx.fillStyle = "#059669";
+            // Body of drop matches active cyber accent palette
+            ctx.fillStyle = accentColor;
             ctx.fillText(text, x, y - fontSize);
           } else {
-            // Head of drop is bright white/emerald
-            ctx.fillStyle = "#e6fffa";
+            // Head of drop is high-luminescence accent / white
+            ctx.fillStyle = accentBright;
             ctx.fillText(text, x, y);
 
-            // Body of drop is neon green
-            ctx.fillStyle = "#00e676";
+            // Body of drop matches active neon cyber accent
+            ctx.fillStyle = accentColor;
             ctx.fillText(text, x, y - fontSize);
           }
 
@@ -141,7 +154,6 @@
           }
           drops[i]++;
         }
-        requestAnimationFrame(drawMatrix);
       }
       requestAnimationFrame(drawMatrix);
     }

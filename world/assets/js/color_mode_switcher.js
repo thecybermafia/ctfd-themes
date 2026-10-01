@@ -9,6 +9,10 @@ function getPreferredTheme() {
   if (storedTheme) {
     return storedTheme;
   }
+  const defaultTheme = document.documentElement.getAttribute("data-default-theme");
+  if (defaultTheme) {
+    return defaultTheme;
+  }
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 

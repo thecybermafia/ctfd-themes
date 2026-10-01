@@ -343,27 +343,41 @@ Alpine.data("ChallengeBoard", () => ({
   },
 
   async loadChallenge(challengeId) {
-    await CTFd.pages.challenge.displayChallenge(challengeId, challenge => {
-      challenge.data.view = addTargetBlank(challenge.data.view);
-      Alpine.store("challenge").data = challenge.data;
+    try {
+      await CTFd.pages.challenge.displayChallenge(challengeId, challenge => {
+        if (!challenge || !challenge.data) return;
+        challenge.data.view = addTargetBlank(challenge.data.view);
+        Alpine.store("challenge").data = challenge.data;
 
-      // nextTick is required here because we're working in a callback
-      Alpine.nextTick(() => {
-        let modal = Modal.getOrCreateInstance("[x-ref='challengeWindow']");
-        // TODO: Get rid of this private attribute access
-        // See https://github.com/twbs/bootstrap/issues/31266
-        modal._element.addEventListener(
-          "hidden.bs.modal",
-          event => {
-            // Remove location hash
-            history.replaceState(null, null, " ");
-          },
-          { once: true },
-        );
-        modal.show();
-        history.replaceState(null, null, `#${challenge.data.name}-${challengeId}`);
+        // nextTick is required here because we're working in a callback
+        Alpine.nextTick(() => {
+          let modal = Modal.getOrCreateInstance("[x-ref='challengeWindow']");
+          // TODO: Get rid of this private attribute access
+          // See https://github.com/twbs/bootstrap/issues/31266
+          modal._element.addEventListener(
+            "hidden.bs.modal",
+            event => {
+              // Remove location hash
+              history.replaceState(null, null, " ");
+            },
+            { once: true },
+          );
+          modal.show();
+          history.replaceState(null, null, `#${challenge.data.name}-${challengeId}`);
+
+          window.dispatchEvent(new CustomEvent("ctfd:challenge-rendered", { detail: challenge.data }));
+          try {
+            if (typeof CTFd._internal.challenge.postRender === "function") {
+              CTFd._internal.challenge.postRender();
+            }
+          } catch (e) {
+            console.error("Error in challenge postRender:", e);
+          }
+        });
       });
-    });
+    } catch (err) {
+      console.warn("[Challenges] Error loading challenge:", err);
+    }
   },
 }));
 

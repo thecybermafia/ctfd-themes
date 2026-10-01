@@ -1,13 +1,34 @@
 <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top {{ 'navbar-compact' if Configs.world_navbar_compact_mode == 'icons' }}" data-compact-mode="{{ Configs.world_navbar_compact_mode or 'auto' }}">
   <div class="container-fluid px-3 px-xl-4">
     <a href="{{ url_for('views.static_html', route='/') }}" class="navbar-brand">
-      {% if Configs.ctf_logo %}
-        <img
-            class="img-responsive ctf_logo"
-            src="{{ url_for('views.files', path=Configs.ctf_logo) }}"
-            alt="{{ Configs.ctf_name }}"
-            height="25"
-        >
+      {% set dark_logo = Configs.ctf_logo_dark or Configs.ctf_logo or Configs.ctf_logo_light %}
+      {% set light_logo = Configs.ctf_logo_light or Configs.ctf_logo or Configs.ctf_logo_dark %}
+      {% if dark_logo or light_logo %}
+        {% if dark_logo == light_logo %}
+          <img
+              class="img-responsive ctf_logo"
+              src="{{ url_for('views.files', path=dark_logo) }}"
+              alt="{{ Configs.ctf_name }}"
+              height="25"
+          >
+        {% else %}
+          {% if dark_logo %}
+            <img
+                class="img-responsive ctf_logo ctf-logo-dark"
+                src="{{ url_for('views.files', path=dark_logo) }}"
+                alt="{{ Configs.ctf_name }}"
+                height="25"
+            >
+          {% endif %}
+          {% if light_logo %}
+            <img
+                class="img-responsive ctf_logo ctf-logo-light"
+                src="{{ url_for('views.files', path=light_logo) }}"
+                alt="{{ Configs.ctf_name }}"
+                height="25"
+            >
+          {% endif %}
+        {% endif %}
       {% else %}
         {{ Configs.ctf_name }}
       {% endif %}
@@ -144,23 +165,23 @@
         {% set curr_lang = get_locale() or 'en' %}
         <li class="nav-item dropdown">
           <button class="nav-link dropdown-toggle lang-selector-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="{% trans %}Change language{% endtrans %}">
-            <i class="fas fa-globe me-1 text-success"></i>
+            <i class="fas fa-globe me-1 lang-globe-icon"></i>
             <span class="font-monospace fw-bold">{{ curr_lang | upper }}</span>
           </button>
           <form class="dropdown-menu dropdown-menu-end lang-dropdown-menu shadow-lg p-0" x-data="LanguageForm">
             <div class="dropdown-header text-uppercase font-monospace px-3 py-2 border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center">
-              <span><i class="fas fa-globe me-1 text-success"></i> {% trans %}Languages{% endtrans %}</span>
-              <span class="badge bg-success text-dark font-monospace">{{ curr_lang | upper }}</span>
+              <span><i class="fas fa-globe me-1 lang-globe-icon"></i> {% trans %}Languages{% endtrans %}</span>
+              <span class="badge lang-active-badge font-monospace">{{ curr_lang | upper }}</span>
             </div>
             <div class="lang-list-container">
               {%- for lang in Languages.names.items() %}
               <div class="dropdown-item d-flex align-items-center justify-content-between px-3 py-2 cursor-pointer {{ 'active-locale' if (curr_lang == lang[0]) }}" @click="set" value="{{ lang[0] }}" data-language="{{ lang[0] }}" onclick="document.cookie='language={{ lang[0] }};path=/;SameSite=Lax';localStorage.setItem('language','{{ lang[0] }}');if(window.CTFd&&CTFd.user&&CTFd.user.id){CTFd.fetch('/api/v1/users/me',{method:'PATCH',body:JSON.stringify({language:'{{ lang[0] }}'})}).finally(()=>location.reload());}else{location.reload();}">
                 <div class="d-flex align-items-center gap-2">
-                  <span class="badge {{ 'bg-success text-dark' if (curr_lang == lang[0]) else 'bg-dark text-muted border border-secondary border-opacity-25' }} font-monospace" style="font-size: 0.7rem; min-width: 32px;" value="{{ lang[0] }}">{{ lang[0] | upper }}</span>
+                  <span class="badge {{ 'lang-active-badge' if (curr_lang == lang[0]) else 'bg-dark text-muted border border-secondary border-opacity-25' }} font-monospace" style="font-size: 0.7rem; min-width: 32px;" value="{{ lang[0] }}">{{ lang[0] | upper }}</span>
                   <span class="locale-name font-monospace small" value="{{ lang[0] }}">{{ lang[1] }}</span>
                 </div>
                 {% if curr_lang == lang[0] %}
-                  <i class="fas fa-check text-success small" value="{{ lang[0] }}"></i>
+                  <i class="fas fa-check lang-check-icon small" value="{{ lang[0] }}"></i>
                 {% endif %}
               </div>
               {%- endfor %}

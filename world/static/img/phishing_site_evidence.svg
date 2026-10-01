@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 650" width="1000" height="650" style="background: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <!-- Drop Shadow for browser & cards -->
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.12"/>
+    </filter>
+    <filter id="btnShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0070ba" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- ================= BROWSER CHROME HEADER ================= -->
+  <!-- Top Titlebar -->
+  <rect x="0" y="0" width="1000" height="42" fill="#202124"/>
+  <!-- Window Controls (Red, Yellow, Green dots) -->
+  <circle cx="22" cy="21" r="6" fill="#ff5f56"/>
+  <circle cx="40" cy="21" r="6" fill="#ffbd2e"/>
+  <circle cx="58" cy="21" r="6" fill="#27c93f"/>
+
+  <!-- Browser Tab -->
+  <path d="M 85,42 L 105,10 L 320,10 L 340,42 Z" fill="#2f3034"/>
+  <text x="130" y="27" fill="#e8eaed" font-size="13" font-weight="500">Security Verification | PayPaI</text>
+  <circle cx="115" cy="23" r="5" fill="#0070ba"/>
+  <text x="312" y="27" fill="#9aa0a6" font-size="14">✕</text>
+
+  <!-- Navigation Bar Container -->
+  <rect x="0" y="42" width="1000" height="48" fill="#2f3034"/>
+  <!-- Nav Buttons (Back, Forward, Refresh) -->
+  <text x="20" y="72" fill="#9aa0a6" font-size="18">←</text>
+  <text x="50" y="72" fill="#9aa0a6" font-size="18">→</text>
+  <text x="80" y="72" fill="#9aa0a6" font-size="18">↻</text>
+
+  <!-- URL Bar (HOTSPOT 1: Deceptive URL paypa1.com with fake lock) -->
+  <rect x="115" y="48" width="820" height="34" rx="17" fill="#202124" stroke="#4a4d51" stroke-width="1"/>
+  <!-- Fake Lock Icon -->
+  <text x="135" y="70" fill="#ff4d4f" font-size="14">🔒</text>
+  <text x="155" y="70" font-size="13" font-family="'JetBrains Mono', monospace">
+    <tspan fill="#ff7875" font-weight="bold">http://</tspan>
+    <tspan fill="#d9d9d9">secure-login.</tspan>
+    <!-- The Red Flag Domain -->
+    <tspan fill="#ff4d4f" font-weight="bold" text-decoration="underline">paypa1.com</tspan>
+    <tspan fill="#8c8c8c">/cgi-bin/webscr?cmd=_account-recovery&amp;id=94827</tspan>
+  </text>
+  <!-- Security Warning Flag in URL bar -->
+  <rect x="830" y="53" width="95" height="24" rx="12" fill="#ff4d4f" fill-opacity="0.2"/>
+  <text x="842" y="69" fill="#ff7875" font-size="11" font-weight="bold">NOT SECURE</text>
+
+  <!-- ================= WEBPAGE CONTENT ================= -->
+  <!-- Webpage Background -->
+  <rect x="0" y="90" width="1000" height="560" fill="#f5f7fa"/>
+
+  <!-- Top Phishing Coercion Banner (HOTSPOT 2: Urgent psychological pressure) -->
+  <rect x="0" y="90" width="1000" height="52" fill="#ff4d4f"/>
+  <text x="500" y="122" fill="#ffffff" font-size="15" font-weight="700" text-anchor="middle" letter-spacing="0.5">
+    ⚠️ CRITICAL ALERT: Suspicious login detected! Your funds are FROZEN. Verify within 24 HOURS or account is TERMINATED.
+  </text>
+
+  <!-- Main Login Card (White floating panel) -->
+  <rect x="250" y="165" width="500" height="430" rx="10" fill="#ffffff" stroke="#e1e6eb" stroke-width="1" filter="url(#cardShadow)"/>
+
+  <!-- Spoofed PayPal Logo (HOTSPOT 3: Altered branding) -->
+  <g transform="translate(435, 185)">
+    <text x="0" y="32" font-size="32" font-weight="900" font-style="italic" fill="#003087">Pay</text>
+    <text x="62" y="32" font-size="32" font-weight="900" font-style="italic" fill="#0079C1">Pa1</text>
+  </g>
+
+  <text x="500" y="248" fill="#2c2e2f" font-size="20" font-weight="600" text-anchor="middle">
+    Emergency Identity Verification
+  </text>
+  <text x="500" y="270" fill="#6c7378" font-size="13" text-anchor="middle">
+    Authenticate your identity to restore full transaction capabilities.
+  </text>
+
+  <!-- Input Field 1: Email -->
+  <text x="290" y="300" fill="#2c2e2f" font-size="13" font-weight="600">Email Address / Phone Number</text>
+  <rect x="290" y="308" width="420" height="38" rx="5" fill="#fbfbfd" stroke="#cbd5e1" stroke-width="1.2"/>
+  <text x="305" y="332" fill="#94a3b8" font-size="13">user@company.com</text>
+
+  <!-- Input Field 2: Password -->
+  <text x="290" y="365" fill="#2c2e2f" font-size="13" font-weight="600">Account Password</text>
+  <rect x="290" y="373" width="420" height="38" rx="5" fill="#fbfbfd" stroke="#cbd5e1" stroke-width="1.2"/>
+  <text x="305" y="397" fill="#64748b" font-size="14">••••••••••••••••</text>
+
+  <!-- Input Field 3 (HOTSPOT 4: Ridiculous credential harvesting on login page) -->
+  <rect x="280" y="422" width="440" height="85" rx="6" fill="#fff1f0" stroke="#ffa39e" stroke-width="1.5"/>
+  <text x="295" y="442" fill="#cf1322" font-size="13" font-weight="bold">Required Security Information (Identity Confirmation):</text>
+  <text x="295" y="462" fill="#595959" font-size="12">Full 9-Digit SSN / National ID:</text>
+  <rect x="295" y="468" width="195" height="30" rx="4" fill="#ffffff" stroke="#d9d9d9"/>
+  <text x="305" y="488" fill="#bfbfbf" font-size="12">XXX-XX-XXXX</text>
+
+  <text x="510" y="462" fill="#595959" font-size="12">ATM Card PIN (4-Digits):</text>
+  <rect x="510" y="468" width="195" height="30" rx="4" fill="#ffffff" stroke="#d9d9d9"/>
+  <text x="520" y="488" fill="#bfbfbf" font-size="12">••••</text>
+
+  <!-- Submit Button -->
+  <rect x="290" y="525" width="420" height="44" rx="22" fill="#0070ba" filter="url(#btnShadow)"/>
+  <text x="500" y="552" fill="#ffffff" font-size="15" font-weight="bold" text-anchor="middle" letter-spacing="0.3">
+    VERIFY ACCOUNT NOW &amp; UNFREEZE FUNDS
+  </text>
+
+  <!-- Footer (HOTSPOT 5: Outdated copyright and fake footer links) -->
+  <text x="500" y="618" fill="#8c8c8c" font-size="11" text-anchor="middle">
+    Copyright © 1999-2017 PayPa1 Inc. All rights reserved. | Terms of Privacy | Contact Support at admin@paypa1-support.ru
+  </text>
+</svg>

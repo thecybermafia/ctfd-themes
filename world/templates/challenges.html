@@ -56,7 +56,6 @@
             class="hud-search-dropdown font-monospace" 
             x-show="searchDropdownOpen && searchResults.length > 0"
             @click.outside="searchDropdownOpen = false"
-            x-transition
           >
             <template x-for="(res, idx) in searchResults" :key="idx">
               <div 
@@ -361,7 +360,7 @@
                   <p class="text-muted small mb-2 font-monospace" x-text="c.category"></p>
                 </div>
                 <div class="mt-2">
-                  <span class="h4 text-success" x-text="c.value + ' PTS'"></span>
+                  <span class="h4 text-success chal-card-value" x-text="c.value + ' PTS'"></span>
                 </div>
               </div>
             </div>
@@ -388,5 +387,6 @@
 {% block scripts %}
   <script src="{{ url_for('views.themes_beta', theme='world', path='js/world-tutorial.js') }}?v={{ Configs.ctf_version or '2.3' }}"></script>
   <script src="{{ url_for('views.themes_beta', theme='world', path='js/world-gameboard.js') }}?v={{ Configs.ctf_version or '2.3' }}"></script>
+  <script src="{{ url_for('views.themes_beta', theme='world', path='js/world-challenge-resizer.js') }}?v={{ Configs.ctf_version or '2.4' }}"></script>
   {{ Assets.js("assets/js/challenges.js") }}
 {% endblock %}

@@ -21,13 +21,18 @@
       <!-- Navigation Tabs -->
       <ul class="nav nav-tabs mb-4" id="themeSettingsTabs" role="tablist">
         <li class="nav-item">
-          <a class="nav-link active" id="visuals-tab" data-bs-toggle="tab" data-toggle="tab" href="#visuals" role="tab">
-            Visuals &amp; Gameboard
+          <a class="nav-link active" id="branding-tab" data-bs-toggle="tab" data-toggle="tab" href="#branding" role="tab">
+            Logo
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" id="visuals-tab" data-bs-toggle="tab" data-toggle="tab" href="#visuals" role="tab">
+            Visuals
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link" id="directory-tab" data-bs-toggle="tab" data-toggle="tab" href="#directory" role="tab">
-            Directories &amp; Leaderboard
+            Leaderboard
           </a>
         </li>
         <li class="nav-item">
@@ -37,12 +42,12 @@
         </li>
         <li class="nav-item">
           <a class="nav-link" id="homepage-tab" data-bs-toggle="tab" data-toggle="tab" href="#homepage" role="tab">
-            Homepage Matrix
+            Homepage
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link" id="countdown-tab" data-bs-toggle="tab" data-toggle="tab" href="#countdown" role="tab">
-            Countdown Page
+            Countdown
           </a>
         </li>
         <li class="nav-item">
@@ -53,12 +58,113 @@
       </ul>
 
       <div class="tab-content" id="themeSettingsTabContent">
+
+        <!-- Tab 0: Logo & Platform Branding -->
+        <div class="tab-pane fade show active" id="branding" role="tabpanel">
+          <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">Platform Branding</h5>
+              <a href="/" target="_blank" class="btn btn-outline-primary btn-sm">
+                View Homepage
+              </a>
+            </div>
+            <div class="card-body">
+              <form id="branding-form">
+                <p class="text-muted mb-4">
+                  Configure light mode and dark mode logos. These settings automatically synchronize with CTFd's Core Configuration (<a href="/admin/config#logo">Admin Config</a>).
+                </p>
+
+                <div class="row g-4 mb-4">
+                  <!-- Light Mode Logo Card -->
+                  <div class="col-md-6">
+                    <div class="card h-100 border">
+                      <div class="card-header bg-transparent py-2">
+                        <span class="fw-bold">Light Mode Logo</span>
+                      </div>
+                      <div class="card-body p-3 d-flex flex-column justify-content-between">
+                        <div class="form-text text-muted mb-2">
+                          Rendered in navbar and public views when the platform or player's browser is set to <strong>Light Mode</strong>.
+                        </div>
+                        <div class="p-3 rounded border my-2 text-center d-flex align-items-center justify-content-center" style="background-color: #f8f9fa; min-height: 90px;">
+                          {% if ctf_logo_light %}
+                            <img id="theme-logo-light-preview" src="{{ url_for('views.files', path=ctf_logo_light) }}" alt="Light Mode Logo" style="max-height: 60px; max-width: 100%;">
+                          {% elif ctf_logo %}
+                            <img id="theme-logo-light-preview" src="{{ url_for('views.files', path=ctf_logo) }}" alt="Fallback Logo" style="max-height: 60px; max-width: 100%;">
+                            <div class="small text-muted ms-2">(Using fallback logo)</div>
+                          {% else %}
+                            <span class="text-muted"><i class="fa fa-image me-1"></i> No Light Mode Logo Uploaded</span>
+                          {% endif %}
+                        </div>
+                        <div class="mt-2">
+                          <label class="form-label fw-bold small mb-1" for="theme-logo-light-file">Choose Light Mode Logo File</label>
+                          <input type="file" class="form-control form-control-sm mb-2" id="theme-logo-light-file" accept="image/*">
+                          {% if ctf_logo_light %}
+                            <div class="form-check mt-1">
+                              <input class="form-check-input" type="checkbox" id="remove-theme-logo-light-checkbox">
+                              <label class="form-check-label text-danger small" for="remove-theme-logo-light-checkbox">
+                                Remove Light Mode Logo (revert to fallback)
+                              </label>
+                            </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Dark Mode Logo Card -->
+                  <div class="col-md-6">
+                    <div class="card h-100 border">
+                      <div class="card-header bg-transparent py-2">
+                        <span class="fw-bold">Dark Mode Logo</span>
+                      </div>
+                      <div class="card-body p-3 d-flex flex-column justify-content-between">
+                        <div class="form-text text-muted mb-2">
+                          Rendered in navbar and matrix gameboard when the platform is in <strong>Dark Mode</strong> (default).
+                        </div>
+                        <div class="p-3 rounded border my-2 text-center d-flex align-items-center justify-content-center" style="background-color: #0b1117; min-height: 90px;">
+                          {% if ctf_logo_dark %}
+                            <img id="theme-logo-dark-preview" src="{{ url_for('views.files', path=ctf_logo_dark) }}" alt="Dark Mode Logo" style="max-height: 60px; max-width: 100%;">
+                          {% elif ctf_logo %}
+                            <img id="theme-logo-dark-preview" src="{{ url_for('views.files', path=ctf_logo) }}" alt="Fallback Logo" style="max-height: 60px; max-width: 100%;">
+                            <div class="small text-muted ms-2">(Using fallback logo)</div>
+                          {% else %}
+                            <span class="text-muted"><i class="fa fa-image me-1"></i> No Dark Mode Logo Uploaded</span>
+                          {% endif %}
+                        </div>
+                        <div class="mt-2">
+                          <label class="form-label fw-bold small mb-1" for="theme-logo-dark-file">Choose Dark Mode Logo File</label>
+                          <input type="file" class="form-control form-control-sm mb-2" id="theme-logo-dark-file" accept="image/*">
+                          {% if ctf_logo_dark %}
+                            <div class="form-check mt-1">
+                              <input class="form-check-input" type="checkbox" id="remove-theme-logo-dark-checkbox">
+                              <label class="form-check-label text-danger small" for="remove-theme-logo-dark-checkbox">
+                                Remove Dark Mode Logo (revert to fallback)
+                              </label>
+                            </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <button type="button" class="btn btn-success" id="save-branding-btn">
+                  Save Branding Settings
+                </button>
+                <span id="branding-status" class="ms-2 fw-bold"></span>
+              </form>
+            </div>
+          </div>
+        </div>
         
         <!-- Tab 1: Visuals & Gameboard -->
-        <div class="tab-pane fade show active" id="visuals" role="tabpanel">
+        <div class="tab-pane fade" id="visuals" role="tabpanel">
           <div class="card mb-4">
-            <div class="card-header">
-              <h5 class="mb-0">Matrix Visual &amp; Interface Configuration</h5>
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">Interface Configuration</h5>
+              <a href="/challenges" target="_blank" class="btn btn-outline-primary btn-sm">
+                View Gameboard
+              </a>
             </div>
             <div class="card-body">
               <form id="visuals-form">
@@ -75,6 +181,15 @@
                     <option value="grid" {% if theme_configs.default_view == 'grid' %}selected{% endif %}>Grid / List View</option>
                   </select>
                   <div class="form-text text-muted">The initial view mode presented to players when navigating to <code>/challenges</code>.</div>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label fw-bold" for="default-theme-mode-select">Default Theme</label>
+                  <select class="form-select" id="default-theme-mode-select" style="max-width: 320px;">
+                    <option value="dark" {% if default_theme_mode == 'dark' or not default_theme_mode %}selected{% endif %}>Dark Mode (Default)</option>
+                    <option value="light" {% if default_theme_mode == 'light' %}selected{% endif %}>Light Mode</option>
+                  </select>
+                  <div class="form-text text-muted">Controls whether the platform initializes in Dark Mode or Light Mode for new visitors.</div>
                 </div>
 
                 <div class="mb-3">
@@ -239,8 +354,11 @@
         <!-- Tab 2: Directories & Leaderboard -->
         <div class="tab-pane fade" id="directory" role="tabpanel">
           <div class="card mb-4">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
               <h5 class="mb-0">Directory Rosters, Custom Attributes &amp; Scoreboard Display</h5>
+              <a href="/scoreboard" target="_blank" class="btn btn-outline-primary btn-sm">
+                View Scoreboard
+              </a>
             </div>
             <div class="card-body">
               <form id="directory-form">
@@ -501,7 +619,7 @@
         <div class="tab-pane fade" id="homepage" role="tabpanel">
           <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
-              <h5 class="mb-0">Homepage Matrix Terminal Configuration (/)</h5>
+              <h5 class="mb-0">Homepage Configuration (/)</h5>
               <a href="/" target="_blank" class="btn btn-outline-primary btn-sm">
                 View Homepage
               </a>
@@ -704,8 +822,11 @@
         <!-- Tab 4: Country Assignments (NO BONUS COLUMNS) -->
         <div class="tab-pane fade" id="territories" role="tabpanel">
           <div class="card mb-4">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
               <h5 class="mb-0">World Map Country Assignments (1:1 Mapping)</h5>
+              <a href="/challenges" target="_blank" class="btn btn-outline-primary btn-sm">
+                View World Map
+              </a>
             </div>
             <div class="card-body">
               <div class="alert alert-info">
@@ -868,6 +989,7 @@ document.addEventListener("DOMContentLoaded", function() {
       const zoomAnim = document.getElementById("zoom-animation-toggle").checked;
       const gridTitle = document.getElementById("grid-title-input").value;
       const defaultView = document.getElementById("default-view-select").value;
+      const defaultThemeMode = document.getElementById("default-theme-mode-select") ? document.getElementById("default-theme-mode-select").value : "dark";
       const accentPalette = document.getElementById("accent-palette-select") ? document.getElementById("accent-palette-select").value : "matrix_green";
 
       const filterAll = document.getElementById("filter-all-nodes-toggle").checked;
@@ -905,6 +1027,7 @@ document.addEventListener("DOMContentLoaded", function() {
           zoom_animation_enabled: zoomAnim,
           grid_title: gridTitle,
           default_view: defaultView,
+          default_theme_mode: defaultThemeMode,
           accent_palette: accentPalette,
           filter_all_nodes_enabled: filterAll,
           filter_breached_enabled: filterBreached,
@@ -1209,6 +1332,198 @@ document.addEventListener("DOMContentLoaded", function() {
       setTimeout(() => { status.textContent = ""; }, 3000);
     });
   });
+
+  // 5. Branding & Dual-Theme Logo Handlers
+  async function handleBrandingUpload(fileInputId, configKey, statusId) {
+    const input = document.getElementById(fileInputId);
+    const status = document.getElementById(statusId);
+    if (!input || !input.files || !input.files[0]) {
+      alert("Please select an image file to upload.");
+      return;
+    }
+    const file = input.files[0];
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("type", "standard");
+    formData.append("nonce", csrfToken);
+
+    status.className = "ms-2 text-muted";
+    status.textContent = "Uploading...";
+
+    try {
+      const uploadRes = await fetch("/api/v1/files", {
+        method: "POST",
+        headers: { "CSRF-Token": csrfToken },
+        body: formData
+      });
+      const uploadData = await uploadRes.json();
+      if (!uploadData.success || !uploadData.data || uploadData.data.length === 0) {
+        status.className = "ms-2 text-danger";
+        status.textContent = "Upload failed.";
+        return;
+      }
+      const location = uploadData.data[0].location;
+
+      const patchRes = await fetch("/api/v1/configs/" + configKey, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "CSRF-Token": csrfToken
+        },
+        body: JSON.stringify({ value: location })
+      });
+      const patchData = await patchRes.json();
+      if (patchData.success) {
+        if (configKey === "ctf_logo_dark" || configKey === "ctf_logo_light") {
+          await fetch("/api/v1/configs/ctf_logo", {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              "CSRF-Token": csrfToken
+            },
+            body: JSON.stringify({ value: location })
+          });
+        }
+        status.className = "ms-2 text-success";
+        status.textContent = "Updated! Reloading...";
+        setTimeout(() => window.location.reload(), 600);
+      } else {
+        status.className = "ms-2 text-danger";
+        status.textContent = "Failed to save configuration.";
+      }
+    } catch (e) {
+      status.className = "ms-2 text-danger";
+      status.textContent = "Error: " + e.message;
+    }
+  }
+
+  async function handleBrandingRemove(configKey, statusId) {
+    if (!confirm("Are you sure you want to remove this logo/icon?")) return;
+    const status = document.getElementById(statusId);
+    status.className = "ms-2 text-muted";
+    status.textContent = "Removing...";
+    try {
+      const res = await fetch("/api/v1/configs/" + configKey, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "CSRF-Token": csrfToken
+        },
+        body: JSON.stringify({ value: null })
+      });
+      const data = await res.json();
+      if (data.success) {
+        status.className = "ms-2 text-success";
+        status.textContent = "Removed! Reloading...";
+        setTimeout(() => window.location.reload(), 600);
+      } else {
+        status.className = "ms-2 text-danger";
+        status.textContent = "Failed to remove.";
+      }
+    } catch (e) {
+      status.className = "ms-2 text-danger";
+      status.textContent = "Error: " + e.message;
+    }
+  }
+
+  const saveBrandingBtn = document.getElementById("save-branding-btn");
+  if (saveBrandingBtn) {
+    saveBrandingBtn.addEventListener("click", async function() {
+      const status = document.getElementById("branding-status");
+      status.className = "ms-2 text-muted";
+      status.textContent = "Saving Branding Settings...";
+      saveBrandingBtn.disabled = true;
+
+      try {
+        let changed = false;
+
+        // 1. Light logo file upload / remove
+        const lightFileInput = document.getElementById("theme-logo-light-file");
+        const removeLightCheck = document.getElementById("remove-theme-logo-light-checkbox");
+        if (lightFileInput && lightFileInput.files && lightFileInput.files.length > 0) {
+          const formData = new FormData();
+          formData.append("file", lightFileInput.files[0]);
+          formData.append("type", "standard");
+          const uploadRes = await fetch("/api/v1/files", {
+            method: "POST",
+            headers: { "CSRF-Token": csrfToken },
+            body: formData
+          });
+          const uploadData = await uploadRes.json();
+          if (uploadData.success && uploadData.data && uploadData.data.length > 0) {
+            const loc = uploadData.data[0].location;
+            await fetch("/api/v1/configs/ctf_logo_light", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json", "CSRF-Token": csrfToken },
+              body: JSON.stringify({ value: loc })
+            });
+            changed = true;
+          } else {
+            throw new Error(uploadData.errors ? Object.values(uploadData.errors).flat().join(", ") : "Failed to upload light logo");
+          }
+        } else if (removeLightCheck && removeLightCheck.checked) {
+          await fetch("/api/v1/configs/ctf_logo_light", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", "CSRF-Token": csrfToken },
+            body: JSON.stringify({ value: null })
+          });
+          changed = true;
+        }
+
+        // 2. Dark logo file upload / remove
+        const darkFileInput = document.getElementById("theme-logo-dark-file");
+        const removeDarkCheck = document.getElementById("remove-theme-logo-dark-checkbox");
+        if (darkFileInput && darkFileInput.files && darkFileInput.files.length > 0) {
+          const formData = new FormData();
+          formData.append("file", darkFileInput.files[0]);
+          formData.append("type", "standard");
+          const uploadRes = await fetch("/api/v1/files", {
+            method: "POST",
+            headers: { "CSRF-Token": csrfToken },
+            body: formData
+          });
+          const uploadData = await uploadRes.json();
+          if (uploadData.success && uploadData.data && uploadData.data.length > 0) {
+            const loc = uploadData.data[0].location;
+            await fetch("/api/v1/configs/ctf_logo_dark", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json", "CSRF-Token": csrfToken },
+              body: JSON.stringify({ value: loc })
+            });
+            // Also sync to standard ctf_logo
+            await fetch("/api/v1/configs/ctf_logo", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json", "CSRF-Token": csrfToken },
+              body: JSON.stringify({ value: loc })
+            });
+            changed = true;
+          } else {
+            throw new Error(uploadData.errors ? Object.values(uploadData.errors).flat().join(", ") : "Failed to upload dark logo");
+          }
+        } else if (removeDarkCheck && removeDarkCheck.checked) {
+          await fetch("/api/v1/configs/ctf_logo_dark", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", "CSRF-Token": csrfToken },
+            body: JSON.stringify({ value: null })
+          });
+          changed = true;
+        }
+
+        status.className = "ms-2 text-success";
+        status.textContent = changed ? "Branding settings saved! Reloading..." : "Branding settings up to date!";
+        if (changed) {
+          setTimeout(() => window.location.reload(), 600);
+        } else {
+          saveBrandingBtn.disabled = false;
+          setTimeout(() => { status.textContent = ""; }, 2500);
+        }
+      } catch (e) {
+        status.className = "ms-2 text-danger";
+        status.textContent = "Error: " + e.message;
+        saveBrandingBtn.disabled = false;
+      }
+    });
+  }
 
 });
 </script>
