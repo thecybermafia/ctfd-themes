@@ -101,6 +101,31 @@ sudo systemctl restart ctfd
 
 ---
 
+## ☁️ Deploying to CTFd Enterprise Cloud / Hosted CTFd
+
+CTFd Cloud validates uploaded ZIP archives strictly:
+- **Themes**: Must have `static/` and `templates/` directly at the **root** of the ZIP.
+- **Plugins**: Must have `__init__.py` directly at the **root** of the ZIP.
+
+### 1. Uploading the World Theme
+Do **not** upload the entire repo ZIP (which throws *"Zip is missing static or templates directory"*). Zip only the **contents** of `world/`:
+```bash
+cd world
+zip -r ../world.zip . -x "*.DS_Store*" "node_modules/*"
+```
+Then in CTFd Cloud: **Instance Management > Themes > Upload Theme**, select `world.zip`.
+
+### 2. Uploading the Companion Plugin (`world_theme`)
+The companion plugin powers real-time country assignment and telemetry APIs. Zip the **contents** of `world_theme/`:
+```bash
+cd world_theme
+zip -r ../world_theme.zip . -x "*.DS_Store*" "*__pycache__*"
+```
+Then in CTFd Cloud: **Instance Management > Plugins > Upload Plugin**, select `world_theme.zip`.
+
+
+---
+
 ## 📜 Attribution & License
 
 This project is licensed under the **Apache License 2.0** with mandatory attribution.
