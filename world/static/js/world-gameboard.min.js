@@ -877,6 +877,7 @@ window.WorldGameboard = function() {
           await this.fetchLiveFeed();
           schedule();
         }, delay);
+        window._worldLiveFeedTimer = this.liveFeedIntervalId;
       };
 
       schedule();
@@ -887,11 +888,22 @@ window.WorldGameboard = function() {
         clearTimeout(this.liveFeedIntervalId);
         this.liveFeedIntervalId = null;
       }
+      if (window._worldLiveFeedTimer) {
+        clearTimeout(window._worldLiveFeedTimer);
+        window._worldLiveFeedTimer = null;
+      }
     },
 
     async fetchLiveFeed(force = false) {
       if (!this.liveFeedEnabled && !force) return;
       if (this.isFetchingFeed) return;
+
+      // Throttle: avoid rapid repeat requests within 10s unless forced
+      const now = Date.now();
+      if (!force && this.lastFeedFetchTime && (now - this.lastFeedFetchTime < 10000)) {
+        return;
+      }
+
       this.isFetchingFeed = true;
 
       try {
@@ -908,6 +920,12 @@ window.WorldGameboard = function() {
         if (res.status === 304) {
           // No changes since last poll - increase backoff slightly up to 2.5x
           this.liveFeedBackoffMultiplier = Math.min(2.5, (this.liveFeedBackoffMultiplier || 1.0) + 0.5);
+          return;
+        }
+
+        if (res.status === 429) {
+          // Rate limited: back off to maximum delay
+          this.liveFeedBackoffMultiplier = 2.5;
           return;
         }
 

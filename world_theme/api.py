@@ -192,7 +192,7 @@ def on_solve_award_bonus(mapper, connection, target):
         print("Error processing early-solver bonus:", e)
 
 @world_bp.route("/api/v1/world/geo", methods=["GET"])
-@ratelimit(method="GET", limit=60, interval=60)
+@ratelimit(method="GET", limit=300, interval=60)
 @cache.cached(timeout=86400, key_prefix="view/world_theme.get_world_geo")
 def get_world_geo():
     """Returns static SVG geometry (d and transform) for all countries, cached for 24 hours."""
@@ -211,7 +211,7 @@ def get_world_geo():
     return resp
 
 @world_bp.route("/api/v1/world/countries", methods=["GET"])
-@ratelimit(method="GET", limit=60, interval=60)
+@ratelimit(method="GET", limit=300, interval=60)
 def get_world_countries():
     include_geometry = request.args.get("include_geometry", "").lower() in ("true", "1")
     user = get_current_user()
@@ -333,7 +333,7 @@ def get_world_countries():
     return resp
 
 @world_bp.route("/api/v1/world/feed", methods=["GET"])
-@ratelimit(method="GET", limit=60, interval=60)
+@ratelimit(method="GET", limit=300, interval=60)
 def get_world_live_feed():
     """Returns real-time country captures and first bloods for all players with ETag and since_id polling support"""
     if not is_admin() and get_config("score_visibility") == "admins":
@@ -469,7 +469,7 @@ def get_world_live_feed():
     return resp
 
 @world_bp.route("/api/v1/world/dominance", methods=["GET"])
-@ratelimit(method="GET", limit=60, interval=60)
+@ratelimit(method="GET", limit=300, interval=60)
 def get_world_dominance():
     """Returns geopolitical territory conquest and dominance rankings using SQL aggregations"""
     empty_resp = {
@@ -921,7 +921,7 @@ def admin_theme_settings():
     )
 
 @world_bp.route("/api/v1/world/settings", methods=["GET", "POST"])
-@ratelimit(method="GET", limit=60, interval=60)
+@ratelimit(method="GET", limit=300, interval=60)
 def world_settings_api():
     if request.method in ("GET", "HEAD"):
         cache_key = "view/world_theme.world_settings_api"

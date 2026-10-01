@@ -385,8 +385,8 @@
 {% endblock %}
 
 {% block scripts %}
-  <script src="{{ url_for('views.themes_beta', theme='world', path='js/world-tutorial.js') }}?v={{ Configs.ctf_version or '2.3' }}"></script>
-  <script src="{{ url_for('views.themes_beta', theme='world', path='js/world-gameboard.js') }}?v={{ Configs.ctf_version or '2.3' }}"></script>
-  <script src="{{ url_for('views.themes_beta', theme='world', path='js/world-challenge-resizer.js') }}?v={{ Configs.ctf_version or '2.4' }}"></script>
+  <script src="{{ url_for('views.themes_beta', theme='world', path='js/world-tutorial.js') }}?v={{ Configs.ctf_version or '2.3' }}.1001"></script>
+  <script src="{{ url_for('views.themes_beta', theme='world', path='js/world-gameboard.js') }}?v={{ Configs.ctf_version or '2.3' }}.1001"></script>
+  <script src="{{ url_for('views.themes_beta', theme='world', path='js/world-challenge-resizer.js') }}?v={{ Configs.ctf_version or '2.4' }}.1001"></script>
   {{ Assets.js("assets/js/challenges.js") }}
 {% endblock %}
