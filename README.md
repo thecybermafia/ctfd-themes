@@ -2,8 +2,6 @@
 
 An immersive, military-grade cyberpunk world map interface and gamification engine for [CTFd](https://ctfd.io/). Transforms traditional CTF challenges into a global cyberwarfare operations theater where competitors breach territories, capture hostile nodes, and intercept live network telemetry.
 
-Developed and defensively hardened by **CyberMafia**.
-
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Security Audited](https://img.shields.io/badge/Security%20Audit-Defensively%20Hardened-brightgreen.svg)](#-security-audit--defensive-hardening)
 [![CTFd Compatibility](https://img.shields.io/badge/CTFd-v3.5%20--%20v3.8%2B-orange.svg)](https://github.com/CTFd/CTFd)
