@@ -156,7 +156,7 @@ You are free to use, fork, and modify this software provided that:
 2. **Prominent Credit**:
    - The theme attribution link in the website footer must be preserved:
      ```text
-     Theme: World by CyberMafia (https://github.com/thecybermafia/ctfd-world-theme)
+     Powered by CTFd World Theme (https://github.com/thecybermafia/ctfd-world-theme)
      ```
    - In any public CTF competition or promotional media using this theme, visible attribution to **CyberMafia** is required.
 3. **State Changes**: Any modified files must carry prominent notices documenting that changes were made.
